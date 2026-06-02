@@ -294,17 +294,26 @@ export default function TireHero() {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
+    <div className="relative h-[100dvh] w-screen overflow-hidden bg-black">
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 0.4, 7.5], fov: 38 }}
+        camera={{ position: [0, 0.4, 9], fov: 42 }}
+        onCreated={({ camera, size }) => {
+          // Fit tire (~4.6 units wide) into view on any aspect ratio
+          const p = camera as THREE.PerspectiveCamera;
+          const aspect = size.width / size.height;
+          const targetWidth = 5.2;
+          const distForWidth = targetWidth / 2 / Math.tan((p.fov * Math.PI) / 360) / Math.min(aspect, 1);
+          p.position.z = Math.max(7, distForWidth);
+          p.updateProjectionMatrix();
+        }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
       >
         <SceneFog />
-        <ambientLight intensity={0.15} />
-        <directionalLight position={[5, 8, 6]} intensity={1.2} color="#ffffff" />
-        <directionalLight position={[-6, -4, -2]} intensity={0.6} color="#88aaff" />
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[5, 8, 6]} intensity={2.2} color="#ffffff" />
+        <directionalLight position={[-6, -4, -2]} intensity={0.8} color="#88aaff" />
 
         <Suspense fallback={null}>
           <SpinnableTire
