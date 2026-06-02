@@ -85,12 +85,13 @@ function CurvedText({
     t.letterSpacing = 0.02;
     t.anchorX = "center";
     t.anchorY = "middle";
-    t.curveRadius = TEXT_RADIUS; // positive wraps around outside
-    t.color = "#9a9a9a";
+    t.curveRadius = -TEXT_RADIUS; // negative = wraps around outside of cylinder
+    t.color = "#cfcfcf";
     t.material = new THREE.MeshStandardMaterial({
-      color: "#8a8a8a",
-      roughness: 0.45,
-      metalness: 0.55,
+      color: "#c0c0c0",
+      roughness: 0.35,
+      metalness: 0.7,
+      emissive: "#1a1a1a",
     });
     t.sync();
     textRef.current = t;
