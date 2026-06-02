@@ -105,18 +105,17 @@ function CurvedText({
 
   useFrame(() => {
     if (groupRef.current) {
-      groupRef.current.rotation.x = rotationRef.current;
+      // rotate around the cylinder's axial axis (world X, local Y after outer rotation)
+      groupRef.current.rotation.y = rotationRef.current;
     }
   });
 
   return (
-    <group ref={groupRef} rotation={[0, 0, Math.PI / 2]}>
-      {/* Position text on the cylinder surface; axialOffset moves along tire width */}
-      <primitive
-        object={troika}
-        position={[0, axialOffset, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      />
+    // Outer wrapper aligns Troika's curve axis (Y) with the cylinder axis (world X)
+    <group rotation={[0, 0, Math.PI / 2]}>
+      <group ref={groupRef}>
+        <primitive object={troika} position={[0, axialOffset, 0]} />
+      </group>
     </group>
   );
 }
