@@ -307,7 +307,8 @@ export default function TireHero() {
         gl={{ antialias: true, powerPreference: "high-performance" }}
       >
         <SceneFog />
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[0, 2, 8]} intensity={1.6} color="#ffffff" />
         <directionalLight position={[5, 8, 6]} intensity={2.2} color="#ffffff" />
         <directionalLight position={[-6, -4, -2]} intensity={0.8} color="#88aaff" />
 
