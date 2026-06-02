@@ -12,6 +12,10 @@ declare module "troika-three-text" {
     font?: string;
     maxWidth?: number;
     textAlign?: string;
+    outlineWidth?: number | string;
+    outlineColor?: string | number;
+    outlineOpacity?: number;
+    depthOffset?: number;
     sync(callback?: () => void): void;
     dispose(): void;
   }
