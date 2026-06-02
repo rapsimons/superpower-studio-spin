@@ -22,14 +22,13 @@ const LIGHT_PRESETS: { name: string; top: string; bottom: string }[] = [
 ];
 
 function TreadCylinder() {
-  // Procedural tread normal-ish look via a dark rubber material + tiny bumps
   return (
     <mesh castShadow receiveShadow rotation={[0, 0, Math.PI / 2]}>
       <cylinderGeometry args={[RADIUS, RADIUS, HEIGHT, 128, 1, false]} />
       <meshStandardMaterial
-        color="#0a0a0a"
-        roughness={0.95}
-        metalness={0.05}
+        color="#2a2a2a"
+        roughness={0.85}
+        metalness={0.15}
       />
     </mesh>
   );
@@ -58,7 +57,7 @@ function TreadBumps() {
       {items.map((it, i) => (
         <mesh key={i} position={it.pos} rotation={it.rot}>
           <boxGeometry args={[0.18, 0.16, 0.08]} />
-          <meshStandardMaterial color="#0d0d0d" roughness={0.9} />
+          <meshStandardMaterial color="#1f1f1f" roughness={0.9} />
         </mesh>
       ))}
     </group>
@@ -86,13 +85,10 @@ function CurvedText({
     t.letterSpacing = 0.02;
     t.anchorX = "center";
     t.anchorY = "middle";
-    t.curveRadius = -TEXT_RADIUS; // negative wraps around outside
-    t.color = "#1a1a1a";
-    t.material = new THREE.MeshStandardMaterial({
-      color: "#161616",
-      roughness: 0.55,
-      metalness: 0.35,
-    });
+    t.curveRadius = -TEXT_RADIUS;
+    t.color = "#d6d6d6";
+    t.outlineWidth = 0.015;
+    t.outlineColor = "#000000";
     t.sync();
     textRef.current = t;
     return t;
@@ -106,18 +102,17 @@ function CurvedText({
 
   useFrame(() => {
     if (groupRef.current) {
-      groupRef.current.rotation.x = rotationRef.current;
+      // rotate around the cylinder's axial axis (world X, local Y after outer rotation)
+      groupRef.current.rotation.y = rotationRef.current;
     }
   });
 
   return (
-    <group ref={groupRef} rotation={[0, 0, Math.PI / 2]}>
-      {/* Position text on the cylinder surface; axialOffset moves along tire width */}
-      <primitive
-        object={troika}
-        position={[0, axialOffset, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      />
+    // Outer wrapper aligns Troika's curve axis (Y) with the cylinder axis (world X)
+    <group rotation={[0, 0, Math.PI / 2]}>
+      <group ref={groupRef}>
+        <primitive object={troika} position={[0, axialOffset, 0]} />
+      </group>
     </group>
   );
 }
@@ -130,10 +125,10 @@ function Tire({
   lighting: LightingColors;
 }) {
   const superRot = useRef(0);
-  const powerRot = useRef(Math.PI * 0.6);
-  const studioRot = useRef(Math.PI * 1.2);
+  const powerRot = useRef(0);
+  const studioRot = useRef(0);
 
-  const speeds = useRef({ s: 0.25, p: 0.15, st: 0.08 });
+  const speeds = useRef({ s: 0.18, p: 0.11, st: 0.06 });
   const aligning = useRef(false);
 
   useFrame((_, dt) => {
@@ -178,9 +173,9 @@ function Tire({
       <TreadCylinder />
       <TreadBumps />
       {/* Three text rings stacked along tire width */}
-      <CurvedText text="SUPER" axialOffset={-1.1} rotationRef={superRot} size={0.95} />
-      <CurvedText text="POWER" axialOffset={0} rotationRef={powerRot} size={0.95} />
-      <CurvedText text="STUDIO" axialOffset={1.1} rotationRef={studioRot} size={0.95} />
+      <CurvedText text="SUPER" axialOffset={-1.25} rotationRef={superRot} size={1.05} />
+      <CurvedText text="POWER" axialOffset={0} rotationRef={powerRot} size={1.05} />
+      <CurvedText text="STUDIO" axialOffset={1.25} rotationRef={studioRot} size={1.05} />
 
       {/* Dynamic colored rim lights */}
       <pointLight position={[0, 6, 4]} intensity={40} color={lighting.top} distance={20} />
@@ -192,7 +187,7 @@ function Tire({
 function SceneFog() {
   const { scene } = useThree();
   useEffect(() => {
-    scene.fog = new THREE.Fog("#000000", 6, 18);
+    scene.fog = new THREE.Fog("#000000", 18, 40);
     scene.background = new THREE.Color("#000000");
   }, [scene]);
   return null;
@@ -295,17 +290,27 @@ export default function TireHero() {
   }, []);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
+    <div className="relative h-[100dvh] w-screen overflow-hidden bg-black">
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 0.4, 7.5], fov: 38 }}
+        camera={{ position: [0, 0.4, 9], fov: 42 }}
+        onCreated={({ camera, size }) => {
+          const p = camera as THREE.PerspectiveCamera;
+          const aspect = size.width / size.height;
+          const targetWidth = 4.8;
+          const distForWidth =
+            targetWidth / 2 / Math.tan((p.fov * Math.PI) / 360) / Math.min(aspect, 1);
+          p.position.z = Math.min(Math.max(7, distForWidth), 14);
+          p.updateProjectionMatrix();
+        }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
       >
         <SceneFog />
-        <ambientLight intensity={0.15} />
-        <directionalLight position={[5, 8, 6]} intensity={1.2} color="#ffffff" />
-        <directionalLight position={[-6, -4, -2]} intensity={0.6} color="#88aaff" />
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[0, 2, 8]} intensity={1.6} color="#ffffff" />
+        <directionalLight position={[5, 8, 6]} intensity={2.2} color="#ffffff" />
+        <directionalLight position={[-6, -4, -2]} intensity={0.8} color="#88aaff" />
 
         <Suspense fallback={null}>
           <SpinnableTire
