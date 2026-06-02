@@ -57,7 +57,7 @@ function TreadBumps() {
       {items.map((it, i) => (
         <mesh key={i} position={it.pos} rotation={it.rot}>
           <boxGeometry args={[0.18, 0.16, 0.08]} />
-          <meshStandardMaterial color="#0d0d0d" roughness={0.9} />
+          <meshStandardMaterial color="#1f1f1f" roughness={0.9} />
         </mesh>
       ))}
     </group>
