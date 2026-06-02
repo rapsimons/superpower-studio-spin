@@ -300,12 +300,12 @@ export default function TireHero() {
         dpr={[1, 2]}
         camera={{ position: [0, 0.4, 9], fov: 42 }}
         onCreated={({ camera, size }) => {
-          // Fit tire (~4.6 units wide) into view on any aspect ratio
           const p = camera as THREE.PerspectiveCamera;
           const aspect = size.width / size.height;
-          const targetWidth = 5.2;
-          const distForWidth = targetWidth / 2 / Math.tan((p.fov * Math.PI) / 360) / Math.min(aspect, 1);
-          p.position.z = Math.max(7, distForWidth);
+          const targetWidth = 4.8;
+          const distForWidth =
+            targetWidth / 2 / Math.tan((p.fov * Math.PI) / 360) / Math.min(aspect, 1);
+          p.position.z = Math.min(Math.max(7, distForWidth), 14);
           p.updateProjectionMatrix();
         }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
