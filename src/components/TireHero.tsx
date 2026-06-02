@@ -22,14 +22,13 @@ const LIGHT_PRESETS: { name: string; top: string; bottom: string }[] = [
 ];
 
 function TreadCylinder() {
-  // Procedural tread normal-ish look via a dark rubber material + tiny bumps
   return (
     <mesh castShadow receiveShadow rotation={[0, 0, Math.PI / 2]}>
       <cylinderGeometry args={[RADIUS, RADIUS, HEIGHT, 128, 1, false]} />
       <meshStandardMaterial
-        color="#0a0a0a"
-        roughness={0.95}
-        metalness={0.05}
+        color="#2a2a2a"
+        roughness={0.85}
+        metalness={0.15}
       />
     </mesh>
   );
