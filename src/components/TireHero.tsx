@@ -191,7 +191,7 @@ function Tire({
 function SceneFog() {
   const { scene } = useThree();
   useEffect(() => {
-    scene.fog = new THREE.Fog("#000000", 6, 18);
+    scene.fog = new THREE.Fog("#000000", 18, 40);
     scene.background = new THREE.Color("#000000");
   }, [scene]);
   return null;
