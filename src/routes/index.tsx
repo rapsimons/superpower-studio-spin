@@ -1,29 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import TireHero from "@/components/TireHero";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Superpower Studio" },
+      { name: "description", content: "Immersive 3D tire hero — Superpower Studio." },
+      { property: "og:title", content: "Superpower Studio" },
+      { property: "og:description", content: "Immersive 3D tire hero — Superpower Studio." },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
+  return <TireHero />;
 }
