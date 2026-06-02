@@ -86,11 +86,11 @@ function CurvedText({
     t.anchorX = "center";
     t.anchorY = "middle";
     t.curveRadius = -TEXT_RADIUS; // negative wraps around outside
-    t.color = "#1a1a1a";
+    t.color = "#9a9a9a";
     t.material = new THREE.MeshStandardMaterial({
-      color: "#161616",
-      roughness: 0.55,
-      metalness: 0.35,
+      color: "#8a8a8a",
+      roughness: 0.45,
+      metalness: 0.55,
     });
     t.sync();
     textRef.current = t;
