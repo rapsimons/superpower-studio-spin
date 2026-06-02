@@ -125,8 +125,8 @@ function Tire({
   lighting: LightingColors;
 }) {
   const superRot = useRef(0);
-  const powerRot = useRef(Math.PI * 0.6);
-  const studioRot = useRef(Math.PI * 1.2);
+  const powerRot = useRef(0);
+  const studioRot = useRef(0);
 
   const speeds = useRef({ s: 0.25, p: 0.15, st: 0.08 });
   const aligning = useRef(false);
