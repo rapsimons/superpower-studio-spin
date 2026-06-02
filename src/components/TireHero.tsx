@@ -173,9 +173,9 @@ function Tire({
       <TreadCylinder />
       <TreadBumps />
       {/* Three text rings stacked along tire width */}
-      <CurvedText text="SUPER" axialOffset={-1.1} rotationRef={superRot} size={0.95} />
-      <CurvedText text="POWER" axialOffset={0} rotationRef={powerRot} size={0.95} />
-      <CurvedText text="STUDIO" axialOffset={1.1} rotationRef={studioRot} size={0.95} />
+      <CurvedText text="SUPER" axialOffset={-1.25} rotationRef={superRot} size={1.05} />
+      <CurvedText text="POWER" axialOffset={0} rotationRef={powerRot} size={1.05} />
+      <CurvedText text="STUDIO" axialOffset={1.25} rotationRef={studioRot} size={1.05} />
 
       {/* Dynamic colored rim lights */}
       <pointLight position={[0, 6, 4]} intensity={40} color={lighting.top} distance={20} />
