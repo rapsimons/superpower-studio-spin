@@ -42,11 +42,6 @@ function TireMesh({
       b.dispose();
       return;
     }
-    let meshCount = 0;
-    b.group.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) meshCount++;
-    });
-    console.log("[tire] built meshes:", meshCount, "params:", params);
     setBuilt((prev) => {
       prev?.dispose();
       return b;
