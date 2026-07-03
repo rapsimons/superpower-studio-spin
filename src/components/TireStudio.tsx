@@ -305,8 +305,8 @@ export default function TireStudio() {
 
         <Section title="Text tread">
           <Slider label="Letter height" min={0.1} max={1.2} step={0.02} value={params.fontSize} onChange={(v) => set("fontSize", v)} />
-          <Slider label="Letter spacing" min={-30} max={80} step={1} value={params.letterSpacing} onChange={(v) => set("letterSpacing", v)} format={(v) => v.toFixed(0)} />
-          <Slider label="Phrase gap" min={0} max={400} step={5} value={params.wordSpacing} onChange={(v) => set("wordSpacing", v)} format={(v) => v.toFixed(0)} />
+          <Slider label="Letter spacing" min={-0.05} max={0.3} step={0.005} value={params.letterSpacing} onChange={(v) => set("letterSpacing", v)} />
+          <Slider label="Phrase gap" min={0} max={2} step={0.05} value={params.wordSpacing} onChange={(v) => set("wordSpacing", v)} />
           <Slider label="Line spacing" min={-0.1} max={0.6} step={0.01} value={params.lineSpacing} onChange={(v) => set("lineSpacing", v)} />
           <Slider label="Extrusion (raised)" min={0.02} max={0.5} step={0.01} value={params.extrusion} onChange={(v) => set("extrusion", v)} />
           <Slider label="Bevel" min={0} max={1} step={0.05} value={params.bevel} onChange={(v) => set("bevel", v)} />
