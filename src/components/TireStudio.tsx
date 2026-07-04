@@ -278,14 +278,35 @@ export default function TireStudio() {
               type="text"
               value={params.text}
               onChange={(e) => set("text", e.target.value.toUpperCase())}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm uppercase tracking-wider text-white placeholder:text-white/30 focus:border-yellow-400/60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
+              className="w-full rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-sm uppercase tracking-wider text-neutral-200 placeholder:text-neutral-500 focus:border-yellow-400/60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
               placeholder="SUPERPOWER"
             />
-            <p className="text-[10px] text-white/50">
-              Auto-repeats around tire, wraps to new rows as it fills.
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
+                Direction
+              </p>
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+                {(["horizontal", "vertical"] as const).map((dir) => (
+                  <button
+                    key={dir}
+                    type="button"
+                    onClick={() => set("textDirection", dir)}
+                    className={`rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      params.textDirection === dir
+                        ? "bg-yellow-400/20 text-yellow-100 ring-1 ring-yellow-400/60"
+                        : "text-neutral-400 hover:bg-white/5"
+                    }`}
+                  >
+                    {dir}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="text-[10px] text-neutral-500">
+              Horizontal wraps around the tire; vertical runs across the face.
             </p>
             <div>
-              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
                 Font <span className="text-yellow-300/80">({font?.name ?? "…"})</span>
               </p>
               <input
@@ -295,7 +316,7 @@ export default function TireStudio() {
                   const f = e.target.files?.[0];
                   if (f) onFontFile(f);
                 }}
-                className="block w-full text-[11px] text-white/70 file:mr-2 file:rounded-md file:border file:border-yellow-400/40 file:bg-yellow-400/10 file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-wider file:text-yellow-100 hover:file:bg-yellow-400/20"
+                className="block w-full text-[11px] text-neutral-400 file:mr-2 file:rounded-md file:border file:border-yellow-400/40 file:bg-yellow-400/10 file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-wider file:text-yellow-100 hover:file:bg-yellow-400/20"
               />
               {fontError && <p className="mt-1 text-[10px] text-red-400">{fontError}</p>}
             </div>
