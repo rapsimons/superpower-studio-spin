@@ -22,6 +22,10 @@ export type TireParams = {
   bevel: number; // 0..1
   // Layout
   rowCount: number; // number of text rows across width (0 = auto)
+  // Direction the text baseline runs on the tread:
+  //  - "horizontal": letters run around the circumference (wraps around)
+  //  - "vertical":   letters run across the tire width (left-to-right on face)
+  textDirection: "horizontal" | "vertical";
 };
 
 export type BuiltTire = {
@@ -90,10 +94,42 @@ function bendAroundCylinder(
     const y = arr[i + 1];
     const z = arr[i + 2];
     const theta = (x / circumference) * Math.PI * 2 + angleOffset;
-    // fatness bulge (torus-ish): fatter middle
     const bulge =
       1 + inflate * 0.18 * Math.cos((y / Math.max(halfWidth, 0.001)) * (Math.PI / 2));
-    const r = radius * bulge + z;
+    // lift text slightly outward so its front face isn't coplanar with the
+    // bulged rubber surface (fixes the "missing front face" clipping).
+    const r = radius * bulge + z + 0.015;
+    arr[i] = Math.cos(theta) * r;
+    arr[i + 1] = y;
+    arr[i + 2] = Math.sin(theta) * r;
+  }
+  pos.needsUpdate = true;
+  geom.computeVertexNormals();
+  geom.computeBoundingBox();
+  geom.computeBoundingSphere();
+}
+
+// Place flat text axially: local X → axial (across tire width),
+// local Y → tangential (letter up direction on surface),
+// local Z (extrusion) → radial outward. Anchored at angle thetaC.
+function placeAxial(
+  geom: THREE.BufferGeometry,
+  radius: number,
+  thetaC: number,
+  halfWidth: number,
+  inflate: number,
+) {
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  const arr = pos.array as Float32Array;
+  for (let i = 0; i < arr.length; i += 3) {
+    const lx = arr[i];
+    const ly = arr[i + 1];
+    const lz = arr[i + 2];
+    const y = lx; // axial
+    const bulge =
+      1 + inflate * 0.18 * Math.cos((y / Math.max(halfWidth, 0.001)) * (Math.PI / 2));
+    const r = radius * bulge + lz + 0.015;
+    const theta = thetaC + ly / (radius * bulge);
     arr[i] = Math.cos(theta) * r;
     arr[i + 1] = y;
     arr[i + 2] = Math.sin(theta) * r;
@@ -138,9 +174,10 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     metalness: 0.05,
   });
   const textMat = new THREE.MeshStandardMaterial({
-    color: 0x2f2f2f,
-    roughness: 0.6,
-    metalness: 0.15,
+    color: 0xd6d6d6,
+    roughness: 0.55,
+    metalness: 0.2,
+    side: THREE.DoubleSide,
   });
   const rimMat = new THREE.MeshStandardMaterial({
     color: 0xcfcfd4,
@@ -242,26 +279,43 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     p.bevel,
   );
   if (built) {
-    const oneWidth = built.width + p.wordSpacing;
-    const copies = Math.max(1, Math.round(circumference / oneWidth));
-    const actualStep = circumference / copies;
-
-    const rowsMid = (rowCount - 1) / 2;
-    for (let row = 0; row < rowCount; row++) {
-      const yCenter = (row - rowsMid) * lineStep;
-      // Slight alternating angular offset for that stacked-repeat look
-      const rowAngleOffset = (row % 2) * (actualStep / 2 / equatorR);
+    if (p.textDirection === "vertical") {
+      // Letters run across the tire width (left-to-right on face).
+      // Distribute phrase copies angularly around the tire; each copy is
+      // centered axially and stands upright on the tread.
+      const angStep = built.width + p.wordSpacing * 0.5;
+      const copies = Math.max(3, Math.round(circumference / Math.max(angStep, 0.05)));
       for (let c = 0; c < copies; c++) {
+        const thetaC = (c / copies) * Math.PI * 2;
         const clone = built.geom.clone();
-        // Center the phrase inside its slot horizontally, baseline centered vertically
-        clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
-        bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
+        // Center phrase: X (which becomes axial) around 0, Y (baseline) around 0
+        clone.translate(-built.width / 2, -rowSize * 0.5, 0);
+        placeAxial(clone, equatorR, thetaC, halfW, p.inflate);
         disposables.push(clone);
         const mesh = new THREE.Mesh(clone, textMat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-
         group.add(mesh);
+      }
+    } else {
+      const oneWidth = built.width + p.wordSpacing;
+      const copies = Math.max(1, Math.round(circumference / oneWidth));
+      const actualStep = circumference / copies;
+
+      const rowsMid = (rowCount - 1) / 2;
+      for (let row = 0; row < rowCount; row++) {
+        const yCenter = (row - rowsMid) * lineStep;
+        const rowAngleOffset = (row % 2) * (actualStep / 2 / equatorR);
+        for (let c = 0; c < copies; c++) {
+          const clone = built.geom.clone();
+          clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
+          bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
+          disposables.push(clone);
+          const mesh = new THREE.Mesh(clone, textMat);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          group.add(mesh);
+        }
       }
     }
     built.geom.dispose();

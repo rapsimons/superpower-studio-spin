@@ -22,6 +22,7 @@ const DEFAULTS: TireParams = {
   extrusion: 0.16,
   bevel: 0.4,
   rowCount: 1,
+  textDirection: "horizontal",
 };
 
 function TireMesh({
@@ -136,7 +137,7 @@ function Slider({
 }) {
   return (
     <label className="block">
-      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-white/60">
+      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-neutral-400">
         <span>{label}</span>
         <span className="text-yellow-300/90">{format ? format(value) : value.toFixed(2)}</span>
       </div>
@@ -195,7 +196,7 @@ export default function TireStudio() {
   );
 
   return (
-    <div className="relative h-[100dvh] w-screen overflow-hidden bg-neutral-950 text-white">
+    <div className="relative h-[100dvh] w-screen overflow-hidden bg-neutral-950 text-neutral-300">
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -222,14 +223,14 @@ export default function TireStudio() {
 
       {/* Top bar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4">
-        <div className="pointer-events-auto rounded-2xl border border-white/10 bg-black/40 px-3 py-2 backdrop-blur-xl">
+        <div className="pointer-events-auto rounded-2xl border border-white/5 bg-black/20 px-3 py-2 backdrop-blur-xl">
           <p className="text-[9px] uppercase tracking-[0.35em] text-yellow-300/70">Superpower</p>
-          <h1 className="text-base font-bold tracking-wider">Tire Studio</h1>
+          <h1 className="text-base font-bold tracking-wider text-neutral-200">Tire Studio</h1>
         </div>
         <div className="pointer-events-auto flex gap-2">
           <button
             onClick={() => exportPNG(transparentBg)}
-            className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider backdrop-blur-xl hover:bg-white/10"
+            className="rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 backdrop-blur-xl hover:bg-white/10"
           >
             PNG
           </button>
@@ -241,21 +242,21 @@ export default function TireStudio() {
           </button>
           <button
             onClick={() => setPanelOpen((o) => !o)}
-            className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider backdrop-blur-xl hover:bg-white/10 sm:hidden"
+            className="rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 backdrop-blur-xl hover:bg-white/10 sm:hidden"
           >
             {panelOpen ? "Hide" : "Edit"}
           </button>
         </div>
       </div>
 
-      {/* Side panel — dark liquid glass */}
+      {/* Side panel — dark liquid glass, ~80% transparent */}
       <div
-        className={`absolute bottom-3 right-3 top-20 z-10 flex w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/40 backdrop-blur-2xl backdrop-saturate-150 transition-transform sm:w-[340px] ${
+        className={`absolute bottom-3 right-3 top-20 z-10 flex w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border border-white/5 bg-black/20 backdrop-blur-2xl backdrop-saturate-150 transition-transform sm:w-[340px] ${
           panelOpen ? "translate-x-0" : "translate-x-[110%]"
         }`}
         style={{
           boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.5), 0 20px 60px -20px rgba(0,0,0,0.8)",
+            "inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.5), 0 20px 60px -20px rgba(0,0,0,0.8)",
         }}
       >
         {/* highlight sheen */}
@@ -277,14 +278,35 @@ export default function TireStudio() {
               type="text"
               value={params.text}
               onChange={(e) => set("text", e.target.value.toUpperCase())}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm uppercase tracking-wider text-white placeholder:text-white/30 focus:border-yellow-400/60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
+              className="w-full rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-sm uppercase tracking-wider text-neutral-200 placeholder:text-neutral-500 focus:border-yellow-400/60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
               placeholder="SUPERPOWER"
             />
-            <p className="text-[10px] text-white/50">
-              Auto-repeats around tire, wraps to new rows as it fills.
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
+                Direction
+              </p>
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+                {(["horizontal", "vertical"] as const).map((dir) => (
+                  <button
+                    key={dir}
+                    type="button"
+                    onClick={() => set("textDirection", dir)}
+                    className={`rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      params.textDirection === dir
+                        ? "bg-yellow-400/20 text-yellow-100 ring-1 ring-yellow-400/60"
+                        : "text-neutral-400 hover:bg-white/5"
+                    }`}
+                  >
+                    {dir}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="text-[10px] text-neutral-500">
+              Horizontal wraps around the tire; vertical runs across the face.
             </p>
             <div>
-              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
                 Font <span className="text-yellow-300/80">({font?.name ?? "…"})</span>
               </p>
               <input
@@ -294,7 +316,7 @@ export default function TireStudio() {
                   const f = e.target.files?.[0];
                   if (f) onFontFile(f);
                 }}
-                className="block w-full text-[11px] text-white/70 file:mr-2 file:rounded-md file:border file:border-yellow-400/40 file:bg-yellow-400/10 file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-wider file:text-yellow-100 hover:file:bg-yellow-400/20"
+                className="block w-full text-[11px] text-neutral-400 file:mr-2 file:rounded-md file:border file:border-yellow-400/40 file:bg-yellow-400/10 file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-wider file:text-yellow-100 hover:file:bg-yellow-400/20"
               />
               {fontError && <p className="mt-1 text-[10px] text-red-400">{fontError}</p>}
             </div>
@@ -339,7 +361,7 @@ export default function TireStudio() {
             open={openSections.export}
             onToggle={() => toggle("export")}
           >
-            <label className="flex items-center gap-2 text-[11px] text-white/80">
+            <label className="flex items-center gap-2 text-[11px] text-neutral-300">
               <input
                 type="checkbox"
                 checked={transparentBg}
@@ -351,7 +373,7 @@ export default function TireStudio() {
             <div className="flex flex-col gap-2 pt-1">
               <button
                 onClick={() => exportPNG(transparentBg)}
-                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider hover:bg-white/10"
+                className="rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 hover:bg-white/10"
               >
                 Download PNG
               </button>
@@ -363,14 +385,14 @@ export default function TireStudio() {
               </button>
               <button
                 onClick={() => setParams(DEFAULTS)}
-                className="rounded-lg border border-white/10 px-3 py-2 text-[11px] uppercase tracking-wider text-white/60 hover:bg-white/5"
+                className="rounded-lg border border-white/5 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-500 hover:bg-white/5"
               >
                 Reset
               </button>
             </div>
           </CollapsibleSection>
 
-          <p className="mt-2 text-[10px] leading-relaxed text-white/40">
+          <p className="mt-2 text-[10px] leading-relaxed text-neutral-500">
             Drag to orbit. Scroll to zoom. Add this app to your home screen to use it offline.
           </p>
         </div>
@@ -391,7 +413,7 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+    <div className="mb-3 overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02]">
       <button
         type="button"
         onClick={onToggle}
