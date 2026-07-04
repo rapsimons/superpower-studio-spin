@@ -137,7 +137,7 @@ function Slider({
 }) {
   return (
     <label className="block">
-      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-white/60">
+      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-neutral-400">
         <span>{label}</span>
         <span className="text-yellow-300/90">{format ? format(value) : value.toFixed(2)}</span>
       </div>
