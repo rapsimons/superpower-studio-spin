@@ -174,9 +174,10 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     metalness: 0.05,
   });
   const textMat = new THREE.MeshStandardMaterial({
-    color: 0x2f2f2f,
-    roughness: 0.6,
-    metalness: 0.15,
+    color: 0xd6d6d6,
+    roughness: 0.55,
+    metalness: 0.2,
+    side: THREE.DoubleSide,
   });
   const rimMat = new THREE.MeshStandardMaterial({
     color: 0xcfcfd4,
