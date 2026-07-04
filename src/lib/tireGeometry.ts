@@ -279,26 +279,43 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     p.bevel,
   );
   if (built) {
-    const oneWidth = built.width + p.wordSpacing;
-    const copies = Math.max(1, Math.round(circumference / oneWidth));
-    const actualStep = circumference / copies;
-
-    const rowsMid = (rowCount - 1) / 2;
-    for (let row = 0; row < rowCount; row++) {
-      const yCenter = (row - rowsMid) * lineStep;
-      // Slight alternating angular offset for that stacked-repeat look
-      const rowAngleOffset = (row % 2) * (actualStep / 2 / equatorR);
+    if (p.textDirection === "vertical") {
+      // Letters run across the tire width (left-to-right on face).
+      // Distribute phrase copies angularly around the tire; each copy is
+      // centered axially and stands upright on the tread.
+      const angStep = built.width + p.wordSpacing * 0.5;
+      const copies = Math.max(3, Math.round(circumference / Math.max(angStep, 0.05)));
       for (let c = 0; c < copies; c++) {
+        const thetaC = (c / copies) * Math.PI * 2;
         const clone = built.geom.clone();
-        // Center the phrase inside its slot horizontally, baseline centered vertically
-        clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
-        bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
+        // Center phrase: X (which becomes axial) around 0, Y (baseline) around 0
+        clone.translate(-built.width / 2, -rowSize * 0.5, 0);
+        placeAxial(clone, equatorR, thetaC, halfW, p.inflate);
         disposables.push(clone);
         const mesh = new THREE.Mesh(clone, textMat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-
         group.add(mesh);
+      }
+    } else {
+      const oneWidth = built.width + p.wordSpacing;
+      const copies = Math.max(1, Math.round(circumference / oneWidth));
+      const actualStep = circumference / copies;
+
+      const rowsMid = (rowCount - 1) / 2;
+      for (let row = 0; row < rowCount; row++) {
+        const yCenter = (row - rowsMid) * lineStep;
+        const rowAngleOffset = (row % 2) * (actualStep / 2 / equatorR);
+        for (let c = 0; c < copies; c++) {
+          const clone = built.geom.clone();
+          clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
+          bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
+          disposables.push(clone);
+          const mesh = new THREE.Mesh(clone, textMat);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          group.add(mesh);
+        }
       }
     }
     built.geom.dispose();
