@@ -413,7 +413,7 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+    <div className="mb-3 overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02]">
       <button
         type="button"
         onClick={onToggle}
