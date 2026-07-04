@@ -22,6 +22,7 @@ const DEFAULTS: TireParams = {
   extrusion: 0.16,
   bevel: 0.4,
   rowCount: 1,
+  textDirection: "horizontal",
 };
 
 function TireMesh({
