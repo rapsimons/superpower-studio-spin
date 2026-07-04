@@ -15,7 +15,7 @@ const DEFAULTS: TireParams = {
   inflate: 0.55,
   rimRadius: 0.8,
   rimDepth: 0.4,
-  fontSize: 0.7,
+  fontSize: 0.5,
   letterSpacing: 0.02,
   wordSpacing: 0.5,
   lineSpacing: 0.05,
