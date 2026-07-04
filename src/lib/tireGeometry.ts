@@ -22,6 +22,10 @@ export type TireParams = {
   bevel: number; // 0..1
   // Layout
   rowCount: number; // number of text rows across width (0 = auto)
+  // Direction the text baseline runs on the tread:
+  //  - "horizontal": letters run around the circumference (wraps around)
+  //  - "vertical":   letters run across the tire width (left-to-right on face)
+  textDirection: "horizontal" | "vertical";
 };
 
 export type BuiltTire = {
