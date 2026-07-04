@@ -3,6 +3,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import { ChevronDown } from "lucide-react";
 import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib/tireFont";
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
 
@@ -11,16 +12,16 @@ const DEFAULTS: TireParams = {
   radius: 1.6,
   width: 2.4,
   sidewallThickness: 0.25,
-  inflate: 0.6,
-  rimRadius: 0.75,
+  inflate: 0.55,
+  rimRadius: 0.8,
   rimDepth: 0.4,
-  fontSize: 0.42,
+  fontSize: 0.5,
   letterSpacing: 0.02,
-  wordSpacing: 0.35,
+  wordSpacing: 0.5,
   lineSpacing: 0.05,
-  extrusion: 0.14,
+  extrusion: 0.16,
   bevel: 0.4,
-  rowCount: 0,
+  rowCount: 1,
 };
 
 function TireMesh({
@@ -36,20 +37,12 @@ function TireMesh({
   const paramsKey = JSON.stringify(params);
 
   useEffect(() => {
-    let cancelled = false;
     const b = buildTire(font, params);
-    if (cancelled) {
-      b.dispose();
-      return;
-    }
     setBuilt((prev) => {
       prev?.dispose();
       return b;
     });
     onReady?.(b.group);
-    return () => {
-      cancelled = true;
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [font, paramsKey]);
 
@@ -61,16 +54,10 @@ function TireMesh({
 function CanvasBackground({ transparent }: { transparent: boolean }) {
   const { scene } = useThree();
   useEffect(() => {
-    scene.background = transparent ? null : new THREE.Color("#000000");
+    scene.background = transparent ? null : new THREE.Color("#050505");
   }, [scene, transparent]);
   return null;
 }
-
-type Handles = {
-  captureGroup: (g: THREE.Group) => void;
-  exportGLB: () => Promise<void>;
-  exportPNG: (transparent: boolean) => Promise<void>;
-};
 
 function useExport(rendererRef: React.MutableRefObject<THREE.WebGLRenderer | null>) {
   const groupRef = useRef<THREE.Group | null>(null);
@@ -90,12 +77,11 @@ function useExport(rendererRef: React.MutableRefObject<THREE.WebGLRenderer | nul
   const exportPNG = useCallback(async (transparent: boolean) => {
     const gl = rendererRef.current;
     if (!gl) return;
-    // Force one render with desired background then snapshot.
     const scene = (gl as unknown as { __scene?: THREE.Scene }).__scene;
     const cam = (gl as unknown as { __camera?: THREE.Camera }).__camera;
     if (!scene || !cam) return;
     const prevBg = scene.background;
-    scene.background = transparent ? null : new THREE.Color("#000000");
+    scene.background = transparent ? null : new THREE.Color("#050505");
     gl.render(scene, cam);
     const dataUrl = gl.domElement.toDataURL("image/png");
     scene.background = prevBg;
@@ -103,7 +89,7 @@ function useExport(rendererRef: React.MutableRefObject<THREE.WebGLRenderer | nul
     downloadBlob(blob, transparent ? "tire-transparent.png" : "tire.png");
   }, [rendererRef]);
 
-  return { captureGroup, exportGLB, exportPNG } satisfies Handles;
+  return { captureGroup, exportGLB, exportPNG };
 }
 
 function downloadBlob(blob: Blob, name: string) {
@@ -150,9 +136,9 @@ function Slider({
 }) {
   return (
     <label className="block">
-      <div className="mb-1 flex items-center justify-between text-xs uppercase tracking-wider text-white/60">
+      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-white/60">
         <span>{label}</span>
-        <span className="text-white/80">{format ? format(value) : value.toFixed(2)}</span>
+        <span className="text-yellow-300/90">{format ? format(value) : value.toFixed(2)}</span>
       </div>
       <input
         type="range"
@@ -161,7 +147,7 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full accent-orange-500"
+        className="w-full accent-yellow-400"
       />
     </label>
   );
@@ -173,6 +159,15 @@ export default function TireStudio() {
   const [params, setParams] = useState<TireParams>(DEFAULTS);
   const [transparentBg, setTransparentBg] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    text: true,
+    tire: true,
+    rim: false,
+    tread: true,
+    export: false,
+  });
+  const toggle = (k: string) => setOpenSections((s) => ({ ...s, [k]: !s[k] }));
+
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const { captureGroup, exportGLB, exportPNG } = useExport(rendererRef);
 
@@ -194,7 +189,10 @@ export default function TireStudio() {
   const set = <K extends keyof TireParams>(k: K, v: TireParams[K]) =>
     setParams((p) => ({ ...p, [k]: v }));
 
-  const camDist = useMemo(() => params.radius * 3.6 + params.width * 0.6, [params.radius, params.width]);
+  const camDist = useMemo(
+    () => params.radius * 3.6 + params.width * 0.6,
+    [params.radius, params.width],
+  );
 
   return (
     <div className="relative h-[100dvh] w-screen overflow-hidden bg-neutral-950 text-white">
@@ -206,7 +204,7 @@ export default function TireStudio() {
       >
         <SceneWireup rendererRef={rendererRef} />
         <CanvasBackground transparent={transparentBg} />
-        <ambientLight intensity={0.35} />
+        <ambientLight intensity={0.4} />
         <directionalLight
           position={[6, 8, 6]}
           intensity={2.4}
@@ -224,121 +222,195 @@ export default function TireStudio() {
 
       {/* Top bar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4">
-        <div className="pointer-events-auto">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-white/50">Superpower</p>
-          <h1 className="text-lg font-bold tracking-wider">Tire Studio</h1>
+        <div className="pointer-events-auto rounded-2xl border border-white/10 bg-black/40 px-3 py-2 backdrop-blur-xl">
+          <p className="text-[9px] uppercase tracking-[0.35em] text-yellow-300/70">Superpower</p>
+          <h1 className="text-base font-bold tracking-wider">Tire Studio</h1>
         </div>
         <div className="pointer-events-auto flex gap-2">
           <button
             onClick={() => exportPNG(transparentBg)}
-            className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs uppercase tracking-wider hover:bg-white/10"
+            className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider backdrop-blur-xl hover:bg-white/10"
           >
             PNG
           </button>
           <button
             onClick={() => exportGLB()}
-            className="rounded-md border border-orange-400/50 bg-orange-500/20 px-3 py-1.5 text-xs uppercase tracking-wider hover:bg-orange-500/30"
+            className="rounded-xl border border-yellow-400/60 bg-yellow-400/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-yellow-100 backdrop-blur-xl hover:bg-yellow-400/30"
           >
             GLB
           </button>
           <button
             onClick={() => setPanelOpen((o) => !o)}
-            className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs uppercase tracking-wider hover:bg-white/10 sm:hidden"
+            className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider backdrop-blur-xl hover:bg-white/10 sm:hidden"
           >
             {panelOpen ? "Hide" : "Edit"}
           </button>
         </div>
       </div>
 
-      {/* Side panel */}
+      {/* Side panel — dark liquid glass */}
       <div
-        className={`absolute bottom-0 right-0 top-16 z-10 flex w-full flex-col overflow-y-auto border-l border-white/10 bg-neutral-950/85 p-4 backdrop-blur-xl transition-transform sm:w-[340px] ${
-          panelOpen ? "translate-x-0" : "translate-x-full"
+        className={`absolute bottom-3 right-3 top-20 z-10 flex w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/40 backdrop-blur-2xl backdrop-saturate-150 transition-transform sm:w-[340px] ${
+          panelOpen ? "translate-x-0" : "translate-x-[110%]"
         }`}
+        style={{
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.5), 0 20px 60px -20px rgba(0,0,0,0.8)",
+        }}
       >
-        <div className="mb-3">
-          <label className="mb-1 block text-xs uppercase tracking-wider text-white/60">Text</label>
-          <input
-            type="text"
-            value={params.text}
-            onChange={(e) => set("text", e.target.value.toUpperCase())}
-            className="w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm uppercase tracking-wider focus:border-orange-400 focus:outline-none"
-            placeholder="SUPERPOWER"
-          />
-          <p className="mt-1 text-[10px] text-white/40">
-            Auto-repeats around tire, wraps to new rows as it fills.
+        {/* highlight sheen */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-60"
+          style={{
+            background:
+              "radial-gradient(120% 60% at 50% 0%, rgba(255,214,64,0.10), transparent 60%)",
+          }}
+        />
+        <div className="relative flex-1 overflow-y-auto p-4">
+          <CollapsibleSection
+            title="Text"
+            open={openSections.text}
+            onToggle={() => toggle("text")}
+          >
+            <input
+              type="text"
+              value={params.text}
+              onChange={(e) => set("text", e.target.value.toUpperCase())}
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm uppercase tracking-wider text-white placeholder:text-white/30 focus:border-yellow-400/60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
+              placeholder="SUPERPOWER"
+            />
+            <p className="text-[10px] text-white/50">
+              Auto-repeats around tire, wraps to new rows as it fills.
+            </p>
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                Font <span className="text-yellow-300/80">({font?.name ?? "…"})</span>
+              </p>
+              <input
+                type="file"
+                accept=".ttf,.otf,.woff"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onFontFile(f);
+                }}
+                className="block w-full text-[11px] text-white/70 file:mr-2 file:rounded-md file:border file:border-yellow-400/40 file:bg-yellow-400/10 file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-wider file:text-yellow-100 hover:file:bg-yellow-400/20"
+              />
+              {fontError && <p className="mt-1 text-[10px] text-red-400">{fontError}</p>}
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Tire"
+            open={openSections.tire}
+            onToggle={() => toggle("tire")}
+          >
+            <Slider label="Diameter" min={0.8} max={3.0} step={0.05} value={params.radius} onChange={(v) => set("radius", v)} />
+            <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
+            <Slider label="Inflate / fatness" min={0} max={1.5} step={0.05} value={params.inflate} onChange={(v) => set("inflate", v)} />
+            <Slider label="Sidewall thickness" min={0.05} max={1.0} step={0.02} value={params.sidewallThickness} onChange={(v) => set("sidewallThickness", v)} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Rim"
+            open={openSections.rim}
+            onToggle={() => toggle("rim")}
+          >
+            <Slider label="Rim size" min={0.2} max={1.6} step={0.02} value={params.rimRadius} onChange={(v) => set("rimRadius", v)} />
+            <Slider label="Rim depth" min={0} max={1} step={0.02} value={params.rimDepth} onChange={(v) => set("rimDepth", v)} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Text tread"
+            open={openSections.tread}
+            onToggle={() => toggle("tread")}
+          >
+            <Slider label="Letter height" min={0.1} max={1.6} step={0.02} value={params.fontSize} onChange={(v) => set("fontSize", v)} />
+            <Slider label="Letter spacing" min={-0.05} max={0.3} step={0.005} value={params.letterSpacing} onChange={(v) => set("letterSpacing", v)} />
+            <Slider label="Phrase gap" min={0} max={2} step={0.05} value={params.wordSpacing} onChange={(v) => set("wordSpacing", v)} />
+            <Slider label="Line spacing" min={-0.1} max={0.6} step={0.01} value={params.lineSpacing} onChange={(v) => set("lineSpacing", v)} />
+            <Slider label="Extrusion (raised)" min={0.02} max={0.5} step={0.01} value={params.extrusion} onChange={(v) => set("extrusion", v)} />
+            <Slider label="Bevel" min={0} max={1} step={0.05} value={params.bevel} onChange={(v) => set("bevel", v)} />
+            <Slider label="Rows (0 = auto)" min={0} max={12} step={1} value={params.rowCount} onChange={(v) => set("rowCount", v)} format={(v) => v.toFixed(0)} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Export"
+            open={openSections.export}
+            onToggle={() => toggle("export")}
+          >
+            <label className="flex items-center gap-2 text-[11px] text-white/80">
+              <input
+                type="checkbox"
+                checked={transparentBg}
+                onChange={(e) => setTransparentBg(e.target.checked)}
+                className="accent-yellow-400"
+              />
+              Transparent background (PNG)
+            </label>
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={() => exportPNG(transparentBg)}
+                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider hover:bg-white/10"
+              >
+                Download PNG
+              </button>
+              <button
+                onClick={() => exportGLB()}
+                className="rounded-lg border border-yellow-400/60 bg-yellow-400/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-yellow-100 hover:bg-yellow-400/30"
+              >
+                Download GLB (3D)
+              </button>
+              <button
+                onClick={() => setParams(DEFAULTS)}
+                className="rounded-lg border border-white/10 px-3 py-2 text-[11px] uppercase tracking-wider text-white/60 hover:bg-white/5"
+              >
+                Reset
+              </button>
+            </div>
+          </CollapsibleSection>
+
+          <p className="mt-2 text-[10px] leading-relaxed text-white/40">
+            Drag to orbit. Scroll to zoom. Add this app to your home screen to use it offline.
           </p>
         </div>
-
-        <div className="mb-4">
-          <label className="mb-1 block text-xs uppercase tracking-wider text-white/60">
-            Font ({font?.name ?? "…"})
-          </label>
-          <input
-            type="file"
-            accept=".ttf,.otf,.woff"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onFontFile(f);
-            }}
-            className="block w-full text-xs text-white/70 file:mr-2 file:rounded-md file:border file:border-white/15 file:bg-white/5 file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-wider file:text-white hover:file:bg-white/10"
-          />
-          {fontError && <p className="mt-1 text-[10px] text-red-400">{fontError}</p>}
-        </div>
-
-        <Section title="Tire">
-          <Slider label="Diameter" min={0.8} max={3.0} step={0.05} value={params.radius} onChange={(v) => set("radius", v)} />
-          <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
-          <Slider label="Inflate / fatness" min={0} max={1.5} step={0.05} value={params.inflate} onChange={(v) => set("inflate", v)} />
-          <Slider label="Sidewall thickness" min={0.05} max={1.0} step={0.02} value={params.sidewallThickness} onChange={(v) => set("sidewallThickness", v)} />
-        </Section>
-
-        <Section title="Rim">
-          <Slider label="Rim size" min={0.2} max={1.6} step={0.02} value={params.rimRadius} onChange={(v) => set("rimRadius", v)} />
-          <Slider label="Rim depth" min={0} max={1} step={0.02} value={params.rimDepth} onChange={(v) => set("rimDepth", v)} />
-        </Section>
-
-        <Section title="Text tread">
-          <Slider label="Letter height" min={0.1} max={1.2} step={0.02} value={params.fontSize} onChange={(v) => set("fontSize", v)} />
-          <Slider label="Letter spacing" min={-0.05} max={0.3} step={0.005} value={params.letterSpacing} onChange={(v) => set("letterSpacing", v)} />
-          <Slider label="Phrase gap" min={0} max={2} step={0.05} value={params.wordSpacing} onChange={(v) => set("wordSpacing", v)} />
-          <Slider label="Line spacing" min={-0.1} max={0.6} step={0.01} value={params.lineSpacing} onChange={(v) => set("lineSpacing", v)} />
-          <Slider label="Extrusion (raised)" min={0.02} max={0.5} step={0.01} value={params.extrusion} onChange={(v) => set("extrusion", v)} />
-          <Slider label="Bevel" min={0} max={1} step={0.05} value={params.bevel} onChange={(v) => set("bevel", v)} />
-          <Slider label="Rows (0 = auto)" min={0} max={12} step={1} value={params.rowCount} onChange={(v) => set("rowCount", v)} format={(v) => v.toFixed(0)} />
-        </Section>
-
-        <Section title="Export">
-          <label className="flex items-center gap-2 text-xs text-white/70">
-            <input type="checkbox" checked={transparentBg} onChange={(e) => setTransparentBg(e.target.checked)} />
-            Transparent background (PNG)
-          </label>
-          <div className="mt-3 flex flex-col gap-2">
-            <button onClick={() => exportPNG(transparentBg)} className="rounded-md border border-white/15 bg-white/5 px-3 py-2 text-xs uppercase tracking-wider hover:bg-white/10">
-              Download PNG
-            </button>
-            <button onClick={() => exportGLB()} className="rounded-md border border-orange-400/50 bg-orange-500/20 px-3 py-2 text-xs uppercase tracking-wider hover:bg-orange-500/30">
-              Download GLB (3D)
-            </button>
-            <button onClick={() => setParams(DEFAULTS)} className="rounded-md border border-white/10 px-3 py-2 text-[11px] uppercase tracking-wider text-white/60 hover:bg-white/5">
-              Reset
-            </button>
-          </div>
-        </Section>
-
-        <p className="mt-4 text-[10px] leading-relaxed text-white/40">
-          Drag to orbit. Scroll to zoom. Add this app to your home screen to use it offline.
-        </p>
       </div>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function CollapsibleSection({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-3">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-orange-300/80">{title}</p>
-      <div className="flex flex-col gap-3">{children}</div>
+    <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
+      >
+        <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-yellow-300">
+          {title}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 text-yellow-300/70 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+      >
+        <div className="overflow-hidden">
+          <div className="flex flex-col gap-3 px-3 pb-3 pt-1">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }

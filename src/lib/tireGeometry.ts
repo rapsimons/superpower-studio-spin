@@ -137,6 +137,11 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     roughness: 0.85,
     metalness: 0.05,
   });
+  const textMat = new THREE.MeshStandardMaterial({
+    color: 0x2f2f2f,
+    roughness: 0.6,
+    metalness: 0.15,
+  });
   const rimMat = new THREE.MeshStandardMaterial({
     color: 0xcfcfd4,
     roughness: 0.25,
@@ -147,7 +152,8 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     roughness: 0.4,
     metalness: 0.9,
   });
-  disposables.push(rubberMat, rimMat, hubMat);
+  disposables.push(rubberMat, textMat, rimMat, hubMat);
+
 
   // Rubber carcass — a tube (outer cylinder + inner cylinder + end caps).
   // We approximate with a lathe geometry: cross-section (radial vs axial).
@@ -219,8 +225,10 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
       : Math.max(1, Math.floor((textStripHalf * 2) / lineStep));
 
   // Build one phrase geometry & clone for each row (also repeat around circumference)
-  const equatorR = outerR * bulge; // widest ring radius
-  const circumference = 2 * Math.PI * equatorR;
+  // Use the un-bulged outerR as the base radius so bendAroundCylinder's own bulge
+  // factor doesn't get applied twice (which pushed text far outside the tire).
+  const equatorR = outerR;
+  const circumference = 2 * Math.PI * equatorR * bulge;
   const phrase = p.text || "SUPERPOWER";
 
   // We tile the phrase around the circumference. Compute how many copies fit and
@@ -245,13 +253,14 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
       const rowAngleOffset = (row % 2) * (actualStep / 2 / equatorR);
       for (let c = 0; c < copies; c++) {
         const clone = built.geom.clone();
-        // Center the phrase inside its slot horizontally
-        clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.35, 0);
+        // Center the phrase inside its slot horizontally, baseline centered vertically
+        clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
         bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
         disposables.push(clone);
-        const mesh = new THREE.Mesh(clone, rubberMat);
+        const mesh = new THREE.Mesh(clone, textMat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
         group.add(mesh);
       }
     }
