@@ -137,6 +137,11 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     roughness: 0.85,
     metalness: 0.05,
   });
+  const textMat = new THREE.MeshStandardMaterial({
+    color: 0x2f2f2f,
+    roughness: 0.6,
+    metalness: 0.15,
+  });
   const rimMat = new THREE.MeshStandardMaterial({
     color: 0xcfcfd4,
     roughness: 0.25,
@@ -147,7 +152,8 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     roughness: 0.4,
     metalness: 0.9,
   });
-  disposables.push(rubberMat, rimMat, hubMat);
+  disposables.push(rubberMat, textMat, rimMat, hubMat);
+
 
   // Rubber carcass — a tube (outer cylinder + inner cylinder + end caps).
   // We approximate with a lathe geometry: cross-section (radial vs axial).
