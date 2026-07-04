@@ -225,8 +225,10 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
       : Math.max(1, Math.floor((textStripHalf * 2) / lineStep));
 
   // Build one phrase geometry & clone for each row (also repeat around circumference)
-  const equatorR = outerR * bulge; // widest ring radius
-  const circumference = 2 * Math.PI * equatorR;
+  // Use the un-bulged outerR as the base radius so bendAroundCylinder's own bulge
+  // factor doesn't get applied twice (which pushed text far outside the tire).
+  const equatorR = outerR;
+  const circumference = 2 * Math.PI * equatorR * bulge;
   const phrase = p.text || "SUPERPOWER";
 
   // We tile the phrase around the circumference. Compute how many copies fit and
@@ -251,13 +253,14 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
       const rowAngleOffset = (row % 2) * (actualStep / 2 / equatorR);
       for (let c = 0; c < copies; c++) {
         const clone = built.geom.clone();
-        // Center the phrase inside its slot horizontally
-        clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.35, 0);
+        // Center the phrase inside its slot horizontally, baseline centered vertically
+        clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
         bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
         disposables.push(clone);
-        const mesh = new THREE.Mesh(clone, rubberMat);
+        const mesh = new THREE.Mesh(clone, textMat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
         group.add(mesh);
       }
     }
