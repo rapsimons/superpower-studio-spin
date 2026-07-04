@@ -139,15 +139,6 @@ function placeAxial(
   geom.computeBoundingBox();
   geom.computeBoundingSphere();
 }
-    arr[i] = Math.cos(theta) * r;
-    arr[i + 1] = y;
-    arr[i + 2] = Math.sin(theta) * r;
-  }
-  pos.needsUpdate = true;
-  geom.computeVertexNormals();
-  geom.computeBoundingBox();
-  geom.computeBoundingSphere();
-}
 
 // Build small tread-block ring at a given axial y.
 function buildTreadRing(
