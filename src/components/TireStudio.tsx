@@ -361,7 +361,7 @@ export default function TireStudio() {
             open={openSections.export}
             onToggle={() => toggle("export")}
           >
-            <label className="flex items-center gap-2 text-[11px] text-white/80">
+            <label className="flex items-center gap-2 text-[11px] text-neutral-300">
               <input
                 type="checkbox"
                 checked={transparentBg}
@@ -373,7 +373,7 @@ export default function TireStudio() {
             <div className="flex flex-col gap-2 pt-1">
               <button
                 onClick={() => exportPNG(transparentBg)}
-                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider hover:bg-white/10"
+                className="rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 hover:bg-white/10"
               >
                 Download PNG
               </button>
@@ -385,14 +385,14 @@ export default function TireStudio() {
               </button>
               <button
                 onClick={() => setParams(DEFAULTS)}
-                className="rounded-lg border border-white/10 px-3 py-2 text-[11px] uppercase tracking-wider text-white/60 hover:bg-white/5"
+                className="rounded-lg border border-white/5 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-500 hover:bg-white/5"
               >
                 Reset
               </button>
             </div>
           </CollapsibleSection>
 
-          <p className="mt-2 text-[10px] leading-relaxed text-white/40">
+          <p className="mt-2 text-[10px] leading-relaxed text-neutral-500">
             Drag to orbit. Scroll to zoom. Add this app to your home screen to use it offline.
           </p>
         </div>
