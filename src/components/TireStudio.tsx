@@ -196,7 +196,7 @@ export default function TireStudio() {
   );
 
   return (
-    <div className="relative h-[100dvh] w-screen overflow-hidden bg-neutral-950 text-white">
+    <div className="relative h-[100dvh] w-screen overflow-hidden bg-neutral-950 text-neutral-300">
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -223,14 +223,14 @@ export default function TireStudio() {
 
       {/* Top bar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4">
-        <div className="pointer-events-auto rounded-2xl border border-white/10 bg-black/40 px-3 py-2 backdrop-blur-xl">
+        <div className="pointer-events-auto rounded-2xl border border-white/5 bg-black/20 px-3 py-2 backdrop-blur-xl">
           <p className="text-[9px] uppercase tracking-[0.35em] text-yellow-300/70">Superpower</p>
-          <h1 className="text-base font-bold tracking-wider">Tire Studio</h1>
+          <h1 className="text-base font-bold tracking-wider text-neutral-200">Tire Studio</h1>
         </div>
         <div className="pointer-events-auto flex gap-2">
           <button
             onClick={() => exportPNG(transparentBg)}
-            className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider backdrop-blur-xl hover:bg-white/10"
+            className="rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 backdrop-blur-xl hover:bg-white/10"
           >
             PNG
           </button>
@@ -242,21 +242,21 @@ export default function TireStudio() {
           </button>
           <button
             onClick={() => setPanelOpen((o) => !o)}
-            className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-[11px] uppercase tracking-wider backdrop-blur-xl hover:bg-white/10 sm:hidden"
+            className="rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 backdrop-blur-xl hover:bg-white/10 sm:hidden"
           >
             {panelOpen ? "Hide" : "Edit"}
           </button>
         </div>
       </div>
 
-      {/* Side panel — dark liquid glass */}
+      {/* Side panel — dark liquid glass, ~80% transparent */}
       <div
-        className={`absolute bottom-3 right-3 top-20 z-10 flex w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/40 backdrop-blur-2xl backdrop-saturate-150 transition-transform sm:w-[340px] ${
+        className={`absolute bottom-3 right-3 top-20 z-10 flex w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border border-white/5 bg-black/20 backdrop-blur-2xl backdrop-saturate-150 transition-transform sm:w-[340px] ${
           panelOpen ? "translate-x-0" : "translate-x-[110%]"
         }`}
         style={{
           boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.5), 0 20px 60px -20px rgba(0,0,0,0.8)",
+            "inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.5), 0 20px 60px -20px rgba(0,0,0,0.8)",
         }}
       >
         {/* highlight sheen */}
