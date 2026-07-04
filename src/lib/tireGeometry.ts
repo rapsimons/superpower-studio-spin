@@ -94,10 +94,51 @@ function bendAroundCylinder(
     const y = arr[i + 1];
     const z = arr[i + 2];
     const theta = (x / circumference) * Math.PI * 2 + angleOffset;
-    // fatness bulge (torus-ish): fatter middle
     const bulge =
       1 + inflate * 0.18 * Math.cos((y / Math.max(halfWidth, 0.001)) * (Math.PI / 2));
-    const r = radius * bulge + z;
+    // lift text slightly outward so its front face isn't coplanar with the
+    // bulged rubber surface (fixes the "missing front face" clipping).
+    const r = radius * bulge + z + 0.015;
+    arr[i] = Math.cos(theta) * r;
+    arr[i + 1] = y;
+    arr[i + 2] = Math.sin(theta) * r;
+  }
+  pos.needsUpdate = true;
+  geom.computeVertexNormals();
+  geom.computeBoundingBox();
+  geom.computeBoundingSphere();
+}
+
+// Place flat text axially: local X → axial (across tire width),
+// local Y → tangential (letter up direction on surface),
+// local Z (extrusion) → radial outward. Anchored at angle thetaC.
+function placeAxial(
+  geom: THREE.BufferGeometry,
+  radius: number,
+  thetaC: number,
+  halfWidth: number,
+  inflate: number,
+) {
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  const arr = pos.array as Float32Array;
+  for (let i = 0; i < arr.length; i += 3) {
+    const lx = arr[i];
+    const ly = arr[i + 1];
+    const lz = arr[i + 2];
+    const y = lx; // axial
+    const bulge =
+      1 + inflate * 0.18 * Math.cos((y / Math.max(halfWidth, 0.001)) * (Math.PI / 2));
+    const r = radius * bulge + lz + 0.015;
+    const theta = thetaC + ly / (radius * bulge);
+    arr[i] = Math.cos(theta) * r;
+    arr[i + 1] = y;
+    arr[i + 2] = Math.sin(theta) * r;
+  }
+  pos.needsUpdate = true;
+  geom.computeVertexNormals();
+  geom.computeBoundingBox();
+  geom.computeBoundingSphere();
+}
     arr[i] = Math.cos(theta) * r;
     arr[i + 1] = y;
     arr[i + 2] = Math.sin(theta) * r;
