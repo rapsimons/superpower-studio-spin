@@ -298,7 +298,7 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
           clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
           // flip so letters read right-side-up on the tread
           clone.rotateX(Math.PI);
-          clone.translate(0, 2 * yCenter, 2 * p.extrusion);
+          clone.translate(0, 2 * yCenter, p.extrusion);
           bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
           disposables.push(clone);
           const mesh = new THREE.Mesh(clone, textMat);
