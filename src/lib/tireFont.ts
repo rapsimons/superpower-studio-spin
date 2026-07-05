@@ -37,18 +37,32 @@ export function loadDefaultFont(): Promise<LoadedFont> {
 
 // Convert an opentype Path to an array of THREE.Shape
 export function pathToShapes(path: opentype.Path): THREE.Shape[] {
-  const shapePath = new THREE.ShapePath();
+  const shapes: THREE.Shape[] = [];
+  let current: THREE.Shape | null = null;
+
+  const finishCurrent = () => {
+    if (!current) return;
+    current.autoClose = true;
+    shapes.push(current);
+    current = null;
+  };
 
   for (const c of path.commands) {
-    if (c.type === "M") shapePath.moveTo(c.x, c.y);
-    else if (c.type === "L") shapePath.lineTo(c.x, c.y);
-    else if (c.type === "Q") shapePath.quadraticCurveTo(c.x1, c.y1, c.x, c.y);
+    if (c.type === "M") {
+      finishCurrent();
+      current = new THREE.Shape();
+      current.moveTo(c.x, c.y);
+    } else if (c.type === "L") current?.lineTo(c.x, c.y);
+    else if (c.type === "Q") current?.quadraticCurveTo(c.x1, c.y1, c.x, c.y);
     else if (c.type === "C") {
-      shapePath.bezierCurveTo(c.x1, c.y1, c.x2, c.y2, c.x, c.y);
+      current?.bezierCurveTo(c.x1, c.y1, c.x2, c.y2, c.x, c.y);
+    } else if (c.type === "Z") {
+      finishCurrent();
     }
   }
+  finishCurrent();
 
-  return shapePath.toShapes(false);
+  return shapes;
 }
 
 export type GlyphInfo = {
