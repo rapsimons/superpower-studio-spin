@@ -37,85 +37,18 @@ export function loadDefaultFont(): Promise<LoadedFont> {
 
 // Convert an opentype Path to an array of THREE.Shape
 export function pathToShapes(path: opentype.Path): THREE.Shape[] {
-  const shapes: THREE.Shape[] = [];
-  let currentShape: THREE.Shape | null = null;
-  let currentHole: THREE.Path | null = null;
-  let subpathPoints: THREE.Vector2[] = [];
-  const subpaths: { points: THREE.Vector2[]; commands: opentype.PathCommand[] }[] = [];
-  let cmds: opentype.PathCommand[] = [];
+  const shapePath = new THREE.ShapePath();
 
-  const flushSubpath = () => {
-    if (cmds.length) subpaths.push({ points: subpathPoints, commands: cmds });
-    cmds = [];
-    subpathPoints = [];
-  };
-
-  let cx = 0,
-    cy = 0;
   for (const c of path.commands) {
-    if (c.type === "M") {
-      flushSubpath();
-      cx = c.x;
-      cy = -c.y;
-    } else if (c.type === "L") {
-      cx = c.x;
-      cy = -c.y;
-    } else if (c.type === "Q") {
-      cx = c.x;
-      cy = -c.y;
-    } else if (c.type === "C") {
-      cx = c.x;
-      cy = -c.y;
-    } else if (c.type === "Z") {
-      // close
-    }
-    subpathPoints.push(new THREE.Vector2(cx, cy));
-    cmds.push(c);
-  }
-  flushSubpath();
-
-  // Determine orientation (outer vs hole) via signed area
-  const areaOf = (pts: THREE.Vector2[]) => {
-    let a = 0;
-    for (let i = 0, n = pts.length; i < n; i++) {
-      const p1 = pts[i];
-      const p2 = pts[(i + 1) % n];
-      a += p1.x * p2.y - p2.x * p1.y;
-    }
-    return a / 2;
-  };
-
-  const buildPath = (commands: opentype.PathCommand[]): THREE.Path => {
-    const p = new THREE.Path();
-    for (const c of commands) {
-      if (c.type === "M") p.moveTo(c.x, -c.y);
-      else if (c.type === "L") p.lineTo(c.x, -c.y);
-      else if (c.type === "Q") p.quadraticCurveTo(c.x1, -c.y1, c.x, -c.y);
-      else if (c.type === "C")
-        p.bezierCurveTo(c.x1, -c.y1, c.x2, -c.y2, c.x, -c.y);
-      else if (c.type === "Z") { /* auto close */ }
-    }
-    return p;
-  };
-
-  // TrueType outer contours are clockwise (Y-up). After flipping Y they become
-  // counter-clockwise → positive signed area in our coords.
-  const outerSign = 1;
-  for (const sp of subpaths) {
-    const area = areaOf(sp.points);
-    const isOuter = area * outerSign > 0 || !currentShape;
-    if (isOuter) {
-      currentShape = new THREE.Shape();
-      const built = buildPath(sp.commands);
-      currentShape.curves = built.curves;
-      currentShape.autoClose = true;
-      shapes.push(currentShape);
-    } else if (currentShape) {
-      currentHole = buildPath(sp.commands);
-      currentShape.holes.push(currentHole);
+    if (c.type === "M") shapePath.moveTo(c.x, c.y);
+    else if (c.type === "L") shapePath.lineTo(c.x, c.y);
+    else if (c.type === "Q") shapePath.quadraticCurveTo(c.x1, c.y1, c.x, c.y);
+    else if (c.type === "C") {
+      shapePath.bezierCurveTo(c.x1, c.y1, c.x2, c.y2, c.x, c.y);
     }
   }
-  return shapes;
+
+  return shapePath.toShapes();
 }
 
 export type GlyphInfo = {
