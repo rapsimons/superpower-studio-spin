@@ -16,13 +16,13 @@ const DEFAULTS: TireParams = {
   rimRadius: 0.8,
   rimDepth: 0.4,
   fontSize: 0.5,
-  letterSpacing: 0.02,
-  wordSpacing: 0.5,
-  lineSpacing: 0.05,
+  letterSpacing: 0.0,
+  wordSpacing: 0.04,
+  lineSpacing: 0.02,
   extrusion: 0.16,
   bevel: 0.4,
-  rowCount: 1,
-  textDirection: "horizontal",
+  rowCount: 0,
+  textDirection: "vertical",
 };
 
 function TireMesh({
