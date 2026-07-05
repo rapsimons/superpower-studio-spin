@@ -237,23 +237,10 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   // Lathe rotates around Y axis; we want tire axis = X, so rotate the whole tire group
   group.add(rubberMesh);
 
-  // Tread side blocks (both edges)
-  const blockCount = Math.max(24, Math.round(outerR * 40));
-  const blockW = (2 * Math.PI * outerR) / blockCount * 0.7;
-  const blockH = p.width * 0.15;
-  const blockD = p.extrusion * 0.9;
-  for (const side of [-1, 1]) {
-    const y = side * (halfW - blockH / 2 - 0.01);
-    const ring = buildTreadRing(outerR * bulge - 0.02, y, blockCount, blockW, blockH, blockD);
-    disposables.push(ring);
-    const mesh = new THREE.Mesh(ring, rubberMat);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-  }
+  // (side tread blocks intentionally omitted — full clean rubber face for text)
 
-  // Text rows — center strip between the tread edges
-  const textStripHalf = halfW - blockH * 1.4;
+  // Text rows — full tread width available
+  const textStripHalf = halfW - 0.05;
   const rowSize = p.fontSize;
   const lineStep = rowSize + p.lineSpacing;
   const rowCount =
@@ -309,6 +296,9 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
         for (let c = 0; c < copies; c++) {
           const clone = built.geom.clone();
           clone.translate(c * actualStep + (actualStep - built.width) / 2, yCenter - rowSize * 0.5, 0);
+          // flip so letters read right-side-up on the tread
+          clone.rotateX(Math.PI);
+          clone.translate(0, 2 * yCenter, p.extrusion);
           bendAroundCylinder(clone, equatorR, circumference, rowAngleOffset, halfW, p.inflate);
           disposables.push(clone);
           const mesh = new THREE.Mesh(clone, textMat);
