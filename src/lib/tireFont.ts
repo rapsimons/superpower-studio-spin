@@ -48,7 +48,7 @@ export function pathToShapes(path: opentype.Path): THREE.Shape[] {
     }
   }
 
-  return shapePath.toShapes();
+  return shapePath.toShapes(false);
 }
 
 export type GlyphInfo = {
