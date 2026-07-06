@@ -489,6 +489,32 @@ export default function TireStudio() {
   );
 }
 
+function ColorRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-3">
+      <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-400">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] uppercase tracking-wider text-yellow-300/90">{value}</span>
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-7 w-10 cursor-pointer rounded-md border border-white/10 bg-black/30"
+        />
+      </div>
+    </label>
+  );
+}
+
+
 function CollapsibleSection({
   title,
   open,
