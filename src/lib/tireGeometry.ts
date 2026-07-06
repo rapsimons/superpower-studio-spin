@@ -186,16 +186,19 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     side: THREE.DoubleSide,
   });
   const rimMat = new THREE.MeshStandardMaterial({
-    color: 0xcfcfd4,
-    roughness: 0.25,
-    metalness: 0.95,
+    color: 0xdcdce2,
+    roughness: 0.15,
+    metalness: 1.0,
+    envMapIntensity: 1.6,
   });
   const hubMat = new THREE.MeshStandardMaterial({
-    color: 0x2b2b2f,
-    roughness: 0.4,
-    metalness: 0.9,
+    color: 0x9a9aa0,
+    roughness: 0.22,
+    metalness: 1.0,
+    envMapIntensity: 1.4,
   });
   disposables.push(rubberMat, textMat, rimMat, hubMat);
+
 
 
   // Rubber carcass — a tube (outer cylinder + inner cylinder + end caps).
@@ -327,25 +330,33 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   disposables.push(rimBarrel);
   const rimBarrelMesh = new THREE.Mesh(rimBarrel, rimMat);
   group.add(rimBarrelMesh);
-  // Rim face (two)
+  // Rim face (two) — symmetric on both sides
   for (const side of [-1, 1]) {
     const disc = new THREE.RingGeometry(rimInner, rimOuter, 64);
     disposables.push(disc);
-    const m = new THREE.Mesh(disc, rimMat);
-    m.rotation.x = Math.PI / 2;
+    const faceMat = rimMat.clone();
+    faceMat.side = THREE.DoubleSide;
+    disposables.push(faceMat);
+    const m = new THREE.Mesh(disc, faceMat);
+    // Flip so each face's front-normal points outward (away from wheel center)
+    m.rotation.x = side > 0 ? -Math.PI / 2 : Math.PI / 2;
     m.position.y = (side * rimWidth) / 2;
     group.add(m);
   }
-  // Hub
-  const hub = new THREE.CylinderGeometry(rimInner, rimInner, rimWidth * 0.35, 32);
+  // Hub — spans full rim width so it looks identical from both sides
+  const hub = new THREE.CylinderGeometry(rimInner, rimInner, rimWidth, 32);
   disposables.push(hub);
   const hubMesh = new THREE.Mesh(hub, hubMat);
   group.add(hubMesh);
-  // Center cap
-  const cap = new THREE.SphereGeometry(rimInner * 0.35, 24, 16);
-  disposables.push(cap);
-  const capMesh = new THREE.Mesh(cap, rimMat);
-  group.add(capMesh);
+  // Center cap on each side
+  for (const side of [-1, 1]) {
+    const cap = new THREE.SphereGeometry(rimInner * 0.4, 24, 16);
+    disposables.push(cap);
+    const capMesh = new THREE.Mesh(cap, rimMat);
+    capMesh.position.y = (side * rimWidth) / 2;
+    group.add(capMesh);
+  }
+
   // Lug nuts around hub
   const lugCount = 6;
   for (let i = 0; i < lugCount; i++) {

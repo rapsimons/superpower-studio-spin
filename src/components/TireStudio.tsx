@@ -154,20 +154,39 @@ function Slider({
   );
 }
 
+type Lighting = {
+  topColor: string;
+  frontColor: string;
+  bottomColor: string;
+  intensity: number;
+  grain: number; // dot size in px (0 = off)
+};
+
+const DEFAULT_LIGHTING: Lighting = {
+  topColor: "#ffffff",
+  frontColor: "#ffe6b0",
+  bottomColor: "#8899ff",
+  intensity: 1.0,
+  grain: 0,
+};
+
 export default function TireStudio() {
   const [font, setFont] = useState<LoadedFont | null>(null);
   const [fontError, setFontError] = useState<string | null>(null);
   const [params, setParams] = useState<TireParams>(DEFAULTS);
   const [transparentBg, setTransparentBg] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
     rim: false,
     tread: true,
+    lighting: false,
     export: false,
   });
   const toggle = (k: string) => setOpenSections((s) => ({ ...s, [k]: !s[k] }));
+
 
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const { captureGroup, exportGLB, exportPNG } = useExport(rendererRef);
@@ -205,21 +224,50 @@ export default function TireStudio() {
       >
         <SceneWireup rendererRef={rendererRef} />
         <CanvasBackground transparent={transparentBg} />
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.35 * lighting.intensity} color={lighting.frontColor} />
+        {/* Top */}
         <directionalLight
-          position={[6, 8, 6]}
-          intensity={2.4}
+          position={[0, 10, 2]}
+          intensity={2.2 * lighting.intensity}
+          color={lighting.topColor}
           castShadow
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
         />
-        <directionalLight position={[-6, -3, -4]} intensity={0.6} color="#8899ff" />
+        {/* Front */}
+        <directionalLight
+          position={[4, 2, 8]}
+          intensity={1.4 * lighting.intensity}
+          color={lighting.frontColor}
+        />
+        {/* Bottom */}
+        <directionalLight
+          position={[-3, -6, -4]}
+          intensity={0.8 * lighting.intensity}
+          color={lighting.bottomColor}
+        />
+
         <Suspense fallback={null}>
           <Environment preset="warehouse" />
           {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
         </Suspense>
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
       </Canvas>
+
+      {/* Grain overlay */}
+      {lighting.grain > 0 && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[5] mix-blend-overlay"
+          style={{
+            opacity: Math.min(0.9, 0.25 + lighting.grain * 0.08),
+            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='${(1.4 / Math.max(0.4, lighting.grain)).toFixed(3)}' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`,
+            backgroundSize: `${Math.round(120 + lighting.grain * 40)}px`,
+          }}
+        />
+      )}
+
+
 
       {/* Top bar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4">
@@ -357,6 +405,46 @@ export default function TireStudio() {
           </CollapsibleSection>
 
           <CollapsibleSection
+            title="Lighting"
+            open={openSections.lighting}
+            onToggle={() => toggle("lighting")}
+          >
+            <ColorRow
+              label="Top light"
+              value={lighting.topColor}
+              onChange={(v) => setLighting((l) => ({ ...l, topColor: v }))}
+            />
+            <ColorRow
+              label="Front light"
+              value={lighting.frontColor}
+              onChange={(v) => setLighting((l) => ({ ...l, frontColor: v }))}
+            />
+            <ColorRow
+              label="Bottom light"
+              value={lighting.bottomColor}
+              onChange={(v) => setLighting((l) => ({ ...l, bottomColor: v }))}
+            />
+            <Slider
+              label="Intensity"
+              min={0}
+              max={3}
+              step={0.05}
+              value={lighting.intensity}
+              onChange={(v) => setLighting((l) => ({ ...l, intensity: v }))}
+            />
+            <Slider
+              label="Grain (dot size)"
+              min={0}
+              max={6}
+              step={0.1}
+              value={lighting.grain}
+              onChange={(v) => setLighting((l) => ({ ...l, grain: v }))}
+            />
+          </CollapsibleSection>
+
+
+
+          <CollapsibleSection
             title="Export"
             open={openSections.export}
             onToggle={() => toggle("export")}
@@ -400,6 +488,32 @@ export default function TireStudio() {
     </div>
   );
 }
+
+function ColorRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-3">
+      <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-400">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] uppercase tracking-wider text-yellow-300/90">{value}</span>
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-7 w-10 cursor-pointer rounded-md border border-white/10 bg-black/30"
+        />
+      </div>
+    </label>
+  );
+}
+
 
 function CollapsibleSection({
   title,
