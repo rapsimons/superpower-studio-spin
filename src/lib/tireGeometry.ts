@@ -245,10 +245,14 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
 
   // (side tread blocks intentionally omitted — full clean rubber face for text)
 
-  // Text rows — full tread width available
+  // Text rows — full tread width available.
+  // Use cap-height (~0.7 * fontSize) as the effective row height so
+  // lineSpacing == 0 means glyphs almost touch. Negative lineSpacing
+  // allows deliberate overlap.
   const textStripHalf = halfW - 0.05;
   const rowSize = p.fontSize;
-  const lineStep = rowSize + p.lineSpacing;
+  const capHeight = rowSize * 0.7;
+  const lineStep = Math.max(0.01, capHeight + p.lineSpacing);
   const rowCount =
     p.rowCount > 0
       ? p.rowCount
