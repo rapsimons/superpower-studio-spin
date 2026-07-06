@@ -154,20 +154,39 @@ function Slider({
   );
 }
 
+type Lighting = {
+  topColor: string;
+  frontColor: string;
+  bottomColor: string;
+  intensity: number;
+  grain: number; // dot size in px (0 = off)
+};
+
+const DEFAULT_LIGHTING: Lighting = {
+  topColor: "#ffffff",
+  frontColor: "#ffe6b0",
+  bottomColor: "#8899ff",
+  intensity: 1.0,
+  grain: 0,
+};
+
 export default function TireStudio() {
   const [font, setFont] = useState<LoadedFont | null>(null);
   const [fontError, setFontError] = useState<string | null>(null);
   const [params, setParams] = useState<TireParams>(DEFAULTS);
   const [transparentBg, setTransparentBg] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
     rim: false,
     tread: true,
+    lighting: false,
     export: false,
   });
   const toggle = (k: string) => setOpenSections((s) => ({ ...s, [k]: !s[k] }));
+
 
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const { captureGroup, exportGLB, exportPNG } = useExport(rendererRef);
