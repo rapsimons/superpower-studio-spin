@@ -186,16 +186,19 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     side: THREE.DoubleSide,
   });
   const rimMat = new THREE.MeshStandardMaterial({
-    color: 0xcfcfd4,
-    roughness: 0.25,
-    metalness: 0.95,
+    color: 0xdcdce2,
+    roughness: 0.15,
+    metalness: 1.0,
+    envMapIntensity: 1.6,
   });
   const hubMat = new THREE.MeshStandardMaterial({
-    color: 0x2b2b2f,
-    roughness: 0.4,
-    metalness: 0.9,
+    color: 0x9a9aa0,
+    roughness: 0.22,
+    metalness: 1.0,
+    envMapIntensity: 1.4,
   });
   disposables.push(rubberMat, textMat, rimMat, hubMat);
+
 
 
   // Rubber carcass — a tube (outer cylinder + inner cylinder + end caps).
