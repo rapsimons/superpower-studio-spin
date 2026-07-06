@@ -295,7 +295,7 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
         group.add(mesh);
       }
     } else {
-      const repeatStep = Math.max(built.width + p.wordSpacing, built.width + 0.01, 0.05);
+      const repeatStep = built.width + p.wordSpacing;
       const copies = Math.max(1, Math.ceil(circumference / repeatStep));
 
       const rowsMid = (rowCount - 1) / 2;
