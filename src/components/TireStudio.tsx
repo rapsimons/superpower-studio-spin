@@ -405,6 +405,46 @@ export default function TireStudio() {
           </CollapsibleSection>
 
           <CollapsibleSection
+            title="Lighting"
+            open={openSections.lighting}
+            onToggle={() => toggle("lighting")}
+          >
+            <ColorRow
+              label="Top light"
+              value={lighting.topColor}
+              onChange={(v) => setLighting((l) => ({ ...l, topColor: v }))}
+            />
+            <ColorRow
+              label="Front light"
+              value={lighting.frontColor}
+              onChange={(v) => setLighting((l) => ({ ...l, frontColor: v }))}
+            />
+            <ColorRow
+              label="Bottom light"
+              value={lighting.bottomColor}
+              onChange={(v) => setLighting((l) => ({ ...l, bottomColor: v }))}
+            />
+            <Slider
+              label="Intensity"
+              min={0}
+              max={3}
+              step={0.05}
+              value={lighting.intensity}
+              onChange={(v) => setLighting((l) => ({ ...l, intensity: v }))}
+            />
+            <Slider
+              label="Grain (dot size)"
+              min={0}
+              max={6}
+              step={0.1}
+              value={lighting.grain}
+              onChange={(v) => setLighting((l) => ({ ...l, grain: v }))}
+            />
+          </CollapsibleSection>
+
+
+
+          <CollapsibleSection
             title="Export"
             open={openSections.export}
             onToggle={() => toggle("export")}
