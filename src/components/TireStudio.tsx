@@ -254,6 +254,21 @@ export default function TireStudio() {
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
       </Canvas>
 
+      {/* Grain overlay */}
+      {lighting.grain > 0 && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[5] mix-blend-overlay"
+          style={{
+            opacity: Math.min(0.9, 0.25 + lighting.grain * 0.08),
+            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='${(1.4 / Math.max(0.4, lighting.grain)).toFixed(3)}' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`,
+            backgroundSize: `${Math.round(120 + lighting.grain * 40)}px`,
+          }}
+        />
+      )}
+
+
+
       {/* Top bar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4">
         <div className="pointer-events-auto rounded-2xl border border-white/5 bg-black/20 px-3 py-2 backdrop-blur-xl">
