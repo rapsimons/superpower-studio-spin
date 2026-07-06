@@ -224,15 +224,29 @@ export default function TireStudio() {
       >
         <SceneWireup rendererRef={rendererRef} />
         <CanvasBackground transparent={transparentBg} />
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.35 * lighting.intensity} color={lighting.frontColor} />
+        {/* Top */}
         <directionalLight
-          position={[6, 8, 6]}
-          intensity={2.4}
+          position={[0, 10, 2]}
+          intensity={2.2 * lighting.intensity}
+          color={lighting.topColor}
           castShadow
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
         />
-        <directionalLight position={[-6, -3, -4]} intensity={0.6} color="#8899ff" />
+        {/* Front */}
+        <directionalLight
+          position={[4, 2, 8]}
+          intensity={1.4 * lighting.intensity}
+          color={lighting.frontColor}
+        />
+        {/* Bottom */}
+        <directionalLight
+          position={[-3, -6, -4]}
+          intensity={0.8 * lighting.intensity}
+          color={lighting.bottomColor}
+        />
+
         <Suspense fallback={null}>
           <Environment preset="warehouse" />
           {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
