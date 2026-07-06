@@ -94,7 +94,9 @@ function bendAroundCylinder(
     const x = arr[i];
     const y = arr[i + 1];
     const z = arr[i + 2];
-    const theta = (x / circumference) * Math.PI * 2 + angleOffset;
+    // Use a decreasing angular direction so the outside-facing tread text
+    // reads normally instead of mirrored/back-to-front.
+    const theta = angleOffset - (x / circumference) * Math.PI * 2;
     const bulge =
       1 + inflate * 0.18 * Math.cos((y / Math.max(halfWidth, 0.001)) * (Math.PI / 2));
     // Lift the whole glyph above the carcass so the cap faces never z-fight
@@ -127,7 +129,9 @@ function placeAxial(
     const lx = arr[i];
     const ly = arr[i + 1];
     const lz = arr[i + 2];
-    const y = lx; // axial
+    // Mirror the axial mapping so text across the tire face reads correctly
+    // from the outside of the tire.
+    const y = -lx; // axial
     const bulge =
       1 + inflate * 0.18 * Math.cos((y / Math.max(halfWidth, 0.001)) * (Math.PI / 2));
     const r = radius * bulge + lz + radialLift;
