@@ -23,6 +23,7 @@ const DEFAULTS: TireParams = {
   bevel: 0.4,
   rowCount: 0,
   textDirection: "vertical",
+  tireColor: "#1a1a1a",
 };
 
 function TireMesh({
