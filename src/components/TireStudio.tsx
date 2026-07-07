@@ -388,6 +388,11 @@ export default function TireStudio() {
             <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
             <Slider label="Inflate / fatness" min={0} max={1.5} step={0.05} value={params.inflate} onChange={(v) => set("inflate", v)} />
             <Slider label="Sidewall thickness" min={0.05} max={1.0} step={0.02} value={params.sidewallThickness} onChange={(v) => set("sidewallThickness", v)} />
+            <ColorRow
+              label="Tire colour"
+              value={params.tireColor}
+              onChange={(v) => set("tireColor", v)}
+            />
           </CollapsibleSection>
 
           <CollapsibleSection
