@@ -171,6 +171,8 @@ const DEFAULT_LIGHTING: Lighting = {
   grain: 0,
 };
 
+const DEFAULT_BG = "#050505";
+
 export default function TireStudio() {
   const [font, setFont] = useState<LoadedFont | null>(null);
   const [fontError, setFontError] = useState<string | null>(null);
