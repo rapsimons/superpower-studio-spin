@@ -424,6 +424,11 @@ export default function TireStudio() {
             onToggle={() => toggle("lighting")}
           >
             <ColorRow
+              label="Background"
+              value={bgColor}
+              onChange={setBgColor}
+            />
+            <ColorRow
               label="Top light"
               value={lighting.topColor}
               onChange={(v) => setLighting((l) => ({ ...l, topColor: v }))}
