@@ -2,7 +2,8 @@ import { useGLTF } from "@react-three/drei";
 import { useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
-import type { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+type LooseLoader = { setMeshoptDecoder: (d: unknown) => void };
 
 import gt2Asset from "@/assets/rims/gt2.glb.asset.json";
 import sportAsset from "@/assets/rims/sport.glb.asset.json";
