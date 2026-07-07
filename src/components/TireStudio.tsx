@@ -6,6 +6,7 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { ChevronDown } from "lucide-react";
 import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib/tireFont";
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
+import { CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
 
 const DEFAULTS: TireParams = {
   text: "SUPERPOWER",
@@ -24,6 +25,7 @@ const DEFAULTS: TireParams = {
   rowCount: 0,
   textDirection: "vertical",
   tireColor: "#1a1a1a",
+  rimStyle: "procedural",
 };
 
 function TireMesh({
@@ -181,6 +183,7 @@ export default function TireStudio() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [bgColor, setBgColor] = useState<string>(DEFAULT_BG);
+  const [rimColor, setRimColor] = useState<string>("#dcdce2");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
@@ -258,6 +261,23 @@ export default function TireStudio() {
             environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
           />
           {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
+          {params.rimStyle !== "procedural" && (() => {
+            const rim = findRim(params.rimStyle);
+            if (!rim) return null;
+            // Fit the model roughly inside the inner rim opening + tire width.
+            const targetDiameter = (params.rimRadius + 0.02) * 2.05;
+            const targetWidth = params.width * 0.92;
+            return (
+              <CustomRim
+                key={rim.id}
+                url={rim.url}
+                fitScale={rim.fitScale}
+                targetDiameter={targetDiameter}
+                targetWidth={targetWidth}
+                metalColor={rimColor}
+              />
+            );
+          })()}
         </Suspense>
 
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
@@ -400,6 +420,36 @@ export default function TireStudio() {
             open={openSections.rim}
             onToggle={() => toggle("rim")}
           >
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
+                Rim style
+              </p>
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+                {(
+                  [
+                    { id: "procedural", label: "Procedural" },
+                    ...RIM_LIBRARY.map((r) => ({ id: r.id, label: r.label })),
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => set("rimStyle", opt.id)}
+                    className={`rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      params.rimStyle === opt.id
+                        ? "bg-yellow-400/20 text-yellow-100 ring-1 ring-yellow-400/60"
+                        : "text-neutral-400 hover:bg-white/5"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[10px] text-neutral-500">
+                Detailed rims are loaded from CDN and auto-fit to the tire.
+              </p>
+            </div>
+            <ColorRow label="Rim colour" value={rimColor} onChange={setRimColor} />
             <Slider label="Rim size" min={0.2} max={1.6} step={0.02} value={params.rimRadius} onChange={(v) => set("rimRadius", v)} />
             <Slider label="Rim depth" min={0} max={1} step={0.02} value={params.rimDepth} onChange={(v) => set("rimDepth", v)} />
           </CollapsibleSection>

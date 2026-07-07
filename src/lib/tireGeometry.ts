@@ -28,6 +28,10 @@ export type TireParams = {
   textDirection: "horizontal" | "vertical";
   // Rubber colour (hex like "#1a1a1a"). Applied to carcass + text.
   tireColor: string;
+  // Rim style: "procedural" builds the built-in disc/hub. Any other value
+  // means an external GLB model is rendered separately, so the procedural
+  // rim + lug nuts are skipped here.
+  rimStyle: string;
 };
 
 export type BuiltTire = {
@@ -324,55 +328,55 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     built.geom.dispose();
   }
 
-  // Rim (chrome disc + inner cylinder)
-  const rimOuter = innerR + 0.02;
-  const rimInner = rimOuter * 0.55;
-  const rimWidth = p.width * (0.55 + 0.35 * (1 - p.rimDepth));
-  // Rim barrel
-  const rimBarrel = new THREE.CylinderGeometry(rimOuter, rimOuter, rimWidth, 64, 1, true);
-  disposables.push(rimBarrel);
-  const rimBarrelMesh = new THREE.Mesh(rimBarrel, rimMat);
-  group.add(rimBarrelMesh);
-  // Rim face (two) — symmetric on both sides
-  for (const side of [-1, 1]) {
-    const disc = new THREE.RingGeometry(rimInner, rimOuter, 64);
-    disposables.push(disc);
-    const faceMat = rimMat.clone();
-    faceMat.side = THREE.DoubleSide;
-    disposables.push(faceMat);
-    const m = new THREE.Mesh(disc, faceMat);
-    // Flip so each face's front-normal points outward (away from wheel center)
-    m.rotation.x = side > 0 ? -Math.PI / 2 : Math.PI / 2;
-    m.position.y = (side * rimWidth) / 2;
-    group.add(m);
-  }
-  // Hub — spans full rim width so it looks identical from both sides
-  const hub = new THREE.CylinderGeometry(rimInner, rimInner, rimWidth, 32);
-  disposables.push(hub);
-  const hubMesh = new THREE.Mesh(hub, hubMat);
-  group.add(hubMesh);
-  // Center cap on each side
-  for (const side of [-1, 1]) {
-    const cap = new THREE.SphereGeometry(rimInner * 0.4, 24, 16);
-    disposables.push(cap);
-    const capMesh = new THREE.Mesh(cap, rimMat);
-    capMesh.position.y = (side * rimWidth) / 2;
-    group.add(capMesh);
-  }
-
-  // Lug nuts around hub
-  const lugCount = 6;
-  for (let i = 0; i < lugCount; i++) {
-    const a = (i / lugCount) * Math.PI * 2;
-    const r = rimInner * 0.7;
+  // Rim (chrome disc + inner cylinder) — only when procedural style.
+  if (!p.rimStyle || p.rimStyle === "procedural") {
+    const rimOuter = innerR + 0.02;
+    const rimInner = rimOuter * 0.55;
+    const rimWidth = p.width * (0.55 + 0.35 * (1 - p.rimDepth));
+    // Rim barrel
+    const rimBarrel = new THREE.CylinderGeometry(rimOuter, rimOuter, rimWidth, 64, 1, true);
+    disposables.push(rimBarrel);
+    const rimBarrelMesh = new THREE.Mesh(rimBarrel, rimMat);
+    group.add(rimBarrelMesh);
+    // Rim face (two) — symmetric on both sides
     for (const side of [-1, 1]) {
-      const lug = new THREE.SphereGeometry(rimInner * 0.08, 12, 10);
-      disposables.push(lug);
-      const m = new THREE.Mesh(lug, rimMat);
-      m.position.set(Math.cos(a) * r, (side * rimWidth) / 2, Math.sin(a) * r);
+      const disc = new THREE.RingGeometry(rimInner, rimOuter, 64);
+      disposables.push(disc);
+      const faceMat = rimMat.clone();
+      faceMat.side = THREE.DoubleSide;
+      disposables.push(faceMat);
+      const m = new THREE.Mesh(disc, faceMat);
+      m.rotation.x = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+      m.position.y = (side * rimWidth) / 2;
       group.add(m);
     }
+    // Hub
+    const hub = new THREE.CylinderGeometry(rimInner, rimInner, rimWidth, 32);
+    disposables.push(hub);
+    const hubMesh = new THREE.Mesh(hub, hubMat);
+    group.add(hubMesh);
+    for (const side of [-1, 1]) {
+      const cap = new THREE.SphereGeometry(rimInner * 0.4, 24, 16);
+      disposables.push(cap);
+      const capMesh = new THREE.Mesh(cap, rimMat);
+      capMesh.position.y = (side * rimWidth) / 2;
+      group.add(capMesh);
+    }
+    // Lug nuts
+    const lugCount = 6;
+    for (let i = 0; i < lugCount; i++) {
+      const a = (i / lugCount) * Math.PI * 2;
+      const r = rimInner * 0.7;
+      for (const side of [-1, 1]) {
+        const lug = new THREE.SphereGeometry(rimInner * 0.08, 12, 10);
+        disposables.push(lug);
+        const m = new THREE.Mesh(lug, rimMat);
+        m.position.set(Math.cos(a) * r, (side * rimWidth) / 2, Math.sin(a) * r);
+        group.add(m);
+      }
+    }
   }
+
 
   // Whole tire's axis is Y after lathe; rotate so axis is X (horizontal tire).
   group.rotation.z = Math.PI / 2;
