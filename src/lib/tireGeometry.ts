@@ -176,13 +176,14 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   const group = new THREE.Group();
   const disposables: (THREE.BufferGeometry | THREE.Material)[] = [];
 
+  const tireHex = new THREE.Color(p.tireColor || "#1a1a1a");
   const rubberMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1a1a,
+    color: tireHex,
     roughness: 0.85,
     metalness: 0.05,
   });
   const textMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1a1a,
+    color: tireHex,
     roughness: 0.82,
     metalness: 0.04,
     side: THREE.DoubleSide,
