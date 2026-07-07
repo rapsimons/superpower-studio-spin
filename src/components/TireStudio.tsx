@@ -83,7 +83,7 @@ function useExport(rendererRef: React.MutableRefObject<THREE.WebGLRenderer | nul
     const cam = (gl as unknown as { __camera?: THREE.Camera }).__camera;
     if (!scene || !cam) return;
     const prevBg = scene.background;
-    scene.background = transparent ? null : new THREE.Color((gl as unknown as { __bg?: string }).__bg ?? "#050505");
+    if (transparent) scene.background = null;
     gl.render(scene, cam);
     const dataUrl = gl.domElement.toDataURL("image/png");
     scene.background = prevBg;
