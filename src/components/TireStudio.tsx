@@ -180,6 +180,7 @@ export default function TireStudio() {
   const [transparentBg, setTransparentBg] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
+  const [bgColor, setBgColor] = useState<string>(DEFAULT_BG);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
