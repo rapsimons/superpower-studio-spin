@@ -26,6 +26,8 @@ export type TireParams = {
   //  - "horizontal": letters run around the circumference (wraps around)
   //  - "vertical":   letters run across the tire width (left-to-right on face)
   textDirection: "horizontal" | "vertical";
+  // Rubber colour (hex like "#1a1a1a"). Applied to carcass + text.
+  tireColor: string;
 };
 
 export type BuiltTire = {
