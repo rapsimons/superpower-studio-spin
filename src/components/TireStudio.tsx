@@ -23,6 +23,7 @@ const DEFAULTS: TireParams = {
   bevel: 0.4,
   rowCount: 0,
   textDirection: "vertical",
+  tireColor: "#1a1a1a",
 };
 
 function TireMesh({
@@ -52,11 +53,11 @@ function TireMesh({
   return <primitive object={built.group} />;
 }
 
-function CanvasBackground({ transparent }: { transparent: boolean }) {
+function CanvasBackground({ transparent, color }: { transparent: boolean; color: string }) {
   const { scene } = useThree();
   useEffect(() => {
-    scene.background = transparent ? null : new THREE.Color("#050505");
-  }, [scene, transparent]);
+    scene.background = transparent ? null : new THREE.Color(color);
+  }, [scene, transparent, color]);
   return null;
 }
 
@@ -82,7 +83,7 @@ function useExport(rendererRef: React.MutableRefObject<THREE.WebGLRenderer | nul
     const cam = (gl as unknown as { __camera?: THREE.Camera }).__camera;
     if (!scene || !cam) return;
     const prevBg = scene.background;
-    scene.background = transparent ? null : new THREE.Color("#050505");
+    if (transparent) scene.background = null;
     gl.render(scene, cam);
     const dataUrl = gl.domElement.toDataURL("image/png");
     scene.background = prevBg;
@@ -170,6 +171,8 @@ const DEFAULT_LIGHTING: Lighting = {
   grain: 0,
 };
 
+const DEFAULT_BG = "#050505";
+
 export default function TireStudio() {
   const [font, setFont] = useState<LoadedFont | null>(null);
   const [fontError, setFontError] = useState<string | null>(null);
@@ -177,6 +180,7 @@ export default function TireStudio() {
   const [transparentBg, setTransparentBg] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
+  const [bgColor, setBgColor] = useState<string>(DEFAULT_BG);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
@@ -223,12 +227,13 @@ export default function TireStudio() {
         camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
       >
         <SceneWireup rendererRef={rendererRef} />
-        <CanvasBackground transparent={transparentBg} />
-        <ambientLight intensity={0.35 * lighting.intensity} color={lighting.frontColor} />
+        <CanvasBackground transparent={transparentBg} color={bgColor} />
+        {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
+        <ambientLight intensity={0.04} color={lighting.frontColor} />
         {/* Top */}
         <directionalLight
           position={[0, 10, 2]}
-          intensity={2.2 * lighting.intensity}
+          intensity={2.2 * Math.pow(lighting.intensity, 1.8)}
           color={lighting.topColor}
           castShadow
           shadow-mapSize-width={1024}
@@ -237,20 +242,24 @@ export default function TireStudio() {
         {/* Front */}
         <directionalLight
           position={[4, 2, 8]}
-          intensity={1.4 * lighting.intensity}
+          intensity={1.4 * Math.pow(lighting.intensity, 1.8)}
           color={lighting.frontColor}
         />
         {/* Bottom */}
         <directionalLight
           position={[-3, -6, -4]}
-          intensity={0.8 * lighting.intensity}
+          intensity={0.8 * Math.pow(lighting.intensity, 1.8)}
           color={lighting.bottomColor}
         />
 
         <Suspense fallback={null}>
-          <Environment preset="warehouse" />
+          <Environment
+            preset="warehouse"
+            environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
+          />
           {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
         </Suspense>
+
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
       </Canvas>
 
@@ -379,6 +388,11 @@ export default function TireStudio() {
             <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
             <Slider label="Inflate / fatness" min={0} max={1.5} step={0.05} value={params.inflate} onChange={(v) => set("inflate", v)} />
             <Slider label="Sidewall thickness" min={0.05} max={1.0} step={0.02} value={params.sidewallThickness} onChange={(v) => set("sidewallThickness", v)} />
+            <ColorRow
+              label="Tire colour"
+              value={params.tireColor}
+              onChange={(v) => set("tireColor", v)}
+            />
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -410,6 +424,11 @@ export default function TireStudio() {
             onToggle={() => toggle("lighting")}
           >
             <ColorRow
+              label="Background"
+              value={bgColor}
+              onChange={setBgColor}
+            />
+            <ColorRow
               label="Top light"
               value={lighting.topColor}
               onChange={(v) => setLighting((l) => ({ ...l, topColor: v }))}
@@ -427,7 +446,7 @@ export default function TireStudio() {
             <Slider
               label="Intensity"
               min={0}
-              max={3}
+              max={8}
               step={0.05}
               value={lighting.intensity}
               onChange={(v) => setLighting((l) => ({ ...l, intensity: v }))}
