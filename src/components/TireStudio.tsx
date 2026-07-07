@@ -420,6 +420,36 @@ export default function TireStudio() {
             open={openSections.rim}
             onToggle={() => toggle("rim")}
           >
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
+                Rim style
+              </p>
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+                {(
+                  [
+                    { id: "procedural", label: "Procedural" },
+                    ...RIM_LIBRARY.map((r) => ({ id: r.id, label: r.label })),
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => set("rimStyle", opt.id)}
+                    className={`rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      params.rimStyle === opt.id
+                        ? "bg-yellow-400/20 text-yellow-100 ring-1 ring-yellow-400/60"
+                        : "text-neutral-400 hover:bg-white/5"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[10px] text-neutral-500">
+                Detailed rims are loaded from CDN and auto-fit to the tire.
+              </p>
+            </div>
+            <ColorRow label="Rim colour" value={rimColor} onChange={setRimColor} />
             <Slider label="Rim size" min={0.2} max={1.6} step={0.02} value={params.rimRadius} onChange={(v) => set("rimRadius", v)} />
             <Slider label="Rim depth" min={0} max={1} step={0.02} value={params.rimDepth} onChange={(v) => set("rimDepth", v)} />
           </CollapsibleSection>
