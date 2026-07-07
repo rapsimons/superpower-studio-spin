@@ -227,12 +227,13 @@ export default function TireStudio() {
         camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
       >
         <SceneWireup rendererRef={rendererRef} />
-        <CanvasBackground transparent={transparentBg} />
-        <ambientLight intensity={0.35 * lighting.intensity} color={lighting.frontColor} />
+        <CanvasBackground transparent={transparentBg} color={bgColor} />
+        {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
+        <ambientLight intensity={0.04} color={lighting.frontColor} />
         {/* Top */}
         <directionalLight
           position={[0, 10, 2]}
-          intensity={2.2 * lighting.intensity}
+          intensity={2.2 * Math.pow(lighting.intensity, 1.8)}
           color={lighting.topColor}
           castShadow
           shadow-mapSize-width={1024}
@@ -241,20 +242,24 @@ export default function TireStudio() {
         {/* Front */}
         <directionalLight
           position={[4, 2, 8]}
-          intensity={1.4 * lighting.intensity}
+          intensity={1.4 * Math.pow(lighting.intensity, 1.8)}
           color={lighting.frontColor}
         />
         {/* Bottom */}
         <directionalLight
           position={[-3, -6, -4]}
-          intensity={0.8 * lighting.intensity}
+          intensity={0.8 * Math.pow(lighting.intensity, 1.8)}
           color={lighting.bottomColor}
         />
 
         <Suspense fallback={null}>
-          <Environment preset="warehouse" />
+          <Environment
+            preset="warehouse"
+            environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
+          />
           {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
         </Suspense>
+
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
       </Canvas>
 
