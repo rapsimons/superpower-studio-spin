@@ -53,11 +53,11 @@ function TireMesh({
   return <primitive object={built.group} />;
 }
 
-function CanvasBackground({ transparent }: { transparent: boolean }) {
+function CanvasBackground({ transparent, color }: { transparent: boolean; color: string }) {
   const { scene } = useThree();
   useEffect(() => {
-    scene.background = transparent ? null : new THREE.Color("#050505");
-  }, [scene, transparent]);
+    scene.background = transparent ? null : new THREE.Color(color);
+  }, [scene, transparent, color]);
   return null;
 }
 
