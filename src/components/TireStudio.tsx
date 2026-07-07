@@ -436,7 +436,7 @@ export default function TireStudio() {
             <Slider
               label="Intensity"
               min={0}
-              max={3}
+              max={8}
               step={0.05}
               value={lighting.intensity}
               onChange={(v) => setLighting((l) => ({ ...l, intensity: v }))}
