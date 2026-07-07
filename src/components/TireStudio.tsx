@@ -6,6 +6,7 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { ChevronDown } from "lucide-react";
 import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib/tireFont";
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
+import { CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
 
 const DEFAULTS: TireParams = {
   text: "SUPERPOWER",
@@ -24,6 +25,7 @@ const DEFAULTS: TireParams = {
   rowCount: 0,
   textDirection: "vertical",
   tireColor: "#1a1a1a",
+  rimStyle: "procedural",
 };
 
 function TireMesh({
