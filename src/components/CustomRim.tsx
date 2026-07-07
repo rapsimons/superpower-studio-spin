@@ -32,7 +32,7 @@ export function findRim(id: string) {
 // Preload
 for (const r of RIM_LIBRARY) {
   useGLTF.preload(r.url, undefined, undefined, (loader) => {
-    (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
+    (loader as unknown as LooseLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 }
 
@@ -60,7 +60,7 @@ export function CustomRim({
     undefined,
     undefined,
     (loader) => {
-      (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
+      (loader as unknown as LooseLoader).setMeshoptDecoder(MeshoptDecoder);
     },
   );
 
