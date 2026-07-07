@@ -261,6 +261,23 @@ export default function TireStudio() {
             environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
           />
           {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
+          {params.rimStyle !== "procedural" && (() => {
+            const rim = findRim(params.rimStyle);
+            if (!rim) return null;
+            // Fit the model roughly inside the inner rim opening + tire width.
+            const targetDiameter = (params.rimRadius + 0.02) * 2.05;
+            const targetWidth = params.width * 0.92;
+            return (
+              <CustomRim
+                key={rim.id}
+                url={rim.url}
+                fitScale={rim.fitScale}
+                targetDiameter={targetDiameter}
+                targetWidth={targetWidth}
+                metalColor={rimColor}
+              />
+            );
+          })()}
         </Suspense>
 
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
