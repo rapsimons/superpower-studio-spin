@@ -28,6 +28,10 @@ export type TireParams = {
   textDirection: "horizontal" | "vertical";
   // Rubber colour (hex like "#1a1a1a"). Applied to carcass + text.
   tireColor: string;
+  // Rim style: "procedural" builds the built-in disc/hub. Any other value
+  // means an external GLB model is rendered separately, so the procedural
+  // rim + lug nuts are skipped here.
+  rimStyle: string;
 };
 
 export type BuiltTire = {
