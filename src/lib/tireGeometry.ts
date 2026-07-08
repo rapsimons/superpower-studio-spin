@@ -202,11 +202,29 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   const disposables: (THREE.BufferGeometry | THREE.Material)[] = [];
 
   const tireHex = new THREE.Color(p.tireColor || "#1a1a1a");
+  const { map: rubberMap, normalMap: rubberNormal } = getRubberTextures();
+  // Tile the tread pattern around the circumference and across the width.
+  // Repeat scales with tire size so the block size stays visually consistent.
+  const uRepeat = Math.max(6, Math.round(2 * Math.PI * p.radius * 1.4));
+  const vRepeat = Math.max(2, Math.round(p.width * 1.6));
+  const rubberMap2 = rubberMap.clone();
+  rubberMap2.needsUpdate = true;
+  rubberMap2.wrapS = rubberMap2.wrapT = THREE.RepeatWrapping;
+  rubberMap2.colorSpace = THREE.SRGBColorSpace;
+  rubberMap2.repeat.set(uRepeat, vRepeat);
+  const rubberNormal2 = rubberNormal.clone();
+  rubberNormal2.needsUpdate = true;
+  rubberNormal2.wrapS = rubberNormal2.wrapT = THREE.RepeatWrapping;
+  rubberNormal2.repeat.set(uRepeat, vRepeat);
   const rubberMat = new THREE.MeshStandardMaterial({
     color: tireHex,
-    roughness: 0.85,
-    metalness: 0.05,
+    map: rubberMap2,
+    normalMap: rubberNormal2,
+    normalScale: new THREE.Vector2(1.2, 1.2),
+    roughness: 0.92,
+    metalness: 0.02,
   });
+  disposables.push(rubberMap2, rubberNormal2);
   const textMat = new THREE.MeshStandardMaterial({
     color: tireHex,
     roughness: 0.82,
