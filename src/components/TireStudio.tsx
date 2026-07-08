@@ -513,21 +513,29 @@ export default function TireStudio() {
               label="Background"
               value={bgColor}
               onChange={setBgColor}
+              intensity={bgIntensity}
+              onIntensityChange={setBgIntensity}
             />
             <ColorRow
               label="Top light"
               value={lighting.topColor}
               onChange={(v) => setLighting((l) => ({ ...l, topColor: v }))}
+              intensity={lighting.topIntensity}
+              onIntensityChange={(v) => setLighting((l) => ({ ...l, topIntensity: v }))}
             />
             <ColorRow
               label="Front light"
               value={lighting.frontColor}
               onChange={(v) => setLighting((l) => ({ ...l, frontColor: v }))}
+              intensity={lighting.frontIntensity}
+              onIntensityChange={(v) => setLighting((l) => ({ ...l, frontIntensity: v }))}
             />
             <ColorRow
               label="Bottom light"
               value={lighting.bottomColor}
               onChange={(v) => setLighting((l) => ({ ...l, bottomColor: v }))}
+              intensity={lighting.bottomIntensity}
+              onIntensityChange={(v) => setLighting((l) => ({ ...l, bottomIntensity: v }))}
             />
             <Slider
               label="Intensity"
