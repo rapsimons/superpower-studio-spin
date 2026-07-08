@@ -440,6 +440,8 @@ export default function TireStudio() {
               label="Tire colour"
               value={params.tireColor}
               onChange={(v) => set("tireColor", v)}
+              intensity={tireIntensity}
+              onIntensityChange={setTireIntensity}
             />
           </CollapsibleSection>
 
