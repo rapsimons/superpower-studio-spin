@@ -606,26 +606,52 @@ function ColorRow({
   label,
   value,
   onChange,
+  intensity,
+  onIntensityChange,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  intensity?: number;
+  onIntensityChange?: (v: number) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3">
-      <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-400">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-yellow-300/90">{value}</span>
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-7 w-10 cursor-pointer rounded-md border border-white/10 bg-black/30"
-        />
-      </div>
-    </label>
+    <div className="flex flex-col gap-1.5">
+      <label className="flex items-center justify-between gap-3">
+        <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-400">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-yellow-300/90">{value}</span>
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-7 w-10 cursor-pointer rounded-md border border-white/10 bg-black/30"
+          />
+        </div>
+      </label>
+      {typeof intensity === "number" && onIntensityChange && (
+        <label className="flex items-center gap-2">
+          <span className="w-16 text-[9px] uppercase tracking-[0.15em] text-neutral-500">
+            Intensity
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={3}
+            step={0.05}
+            value={intensity}
+            onChange={(e) => onIntensityChange(parseFloat(e.target.value))}
+            className="flex-1 accent-yellow-400"
+          />
+          <span className="w-8 text-right text-[10px] text-yellow-300/80">
+            {intensity.toFixed(2)}
+          </span>
+        </label>
+      )}
+    </div>
   );
 }
+
 
 
 function CollapsibleSection({
