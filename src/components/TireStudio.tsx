@@ -161,6 +161,9 @@ type Lighting = {
   topColor: string;
   frontColor: string;
   bottomColor: string;
+  topIntensity: number;
+  frontIntensity: number;
+  bottomIntensity: number;
   intensity: number;
   grain: number; // dot size in px (0 = off)
 };
@@ -169,11 +172,25 @@ const DEFAULT_LIGHTING: Lighting = {
   topColor: "#ffffff",
   frontColor: "#ffe6b0",
   bottomColor: "#8899ff",
+  topIntensity: 1,
+  frontIntensity: 1,
+  bottomIntensity: 1,
   intensity: 1.0,
   grain: 0,
 };
 
 const DEFAULT_BG = "#050505";
+
+// Scale a hex color's RGB channels by k (clamped 0-255).
+function scaleHex(hex: string, k: number): string {
+  const m = /^#?([a-f\d]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const r = Math.max(0, Math.min(255, Math.round(((n >> 16) & 0xff) * k)));
+  const g = Math.max(0, Math.min(255, Math.round(((n >> 8) & 0xff) * k)));
+  const b = Math.max(0, Math.min(255, Math.round((n & 0xff) * k)));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
 
 export default function TireStudio() {
   const [font, setFont] = useState<LoadedFont | null>(null);
