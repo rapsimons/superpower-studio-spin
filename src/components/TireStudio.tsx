@@ -161,6 +161,9 @@ type Lighting = {
   topColor: string;
   frontColor: string;
   bottomColor: string;
+  topIntensity: number;
+  frontIntensity: number;
+  bottomIntensity: number;
   intensity: number;
   grain: number; // dot size in px (0 = off)
 };
@@ -169,11 +172,25 @@ const DEFAULT_LIGHTING: Lighting = {
   topColor: "#ffffff",
   frontColor: "#ffe6b0",
   bottomColor: "#8899ff",
+  topIntensity: 1,
+  frontIntensity: 1,
+  bottomIntensity: 1,
   intensity: 1.0,
   grain: 0,
 };
 
 const DEFAULT_BG = "#050505";
+
+// Scale a hex color's RGB channels by k (clamped 0-255).
+function scaleHex(hex: string, k: number): string {
+  const m = /^#?([a-f\d]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const r = Math.max(0, Math.min(255, Math.round(((n >> 16) & 0xff) * k)));
+  const g = Math.max(0, Math.min(255, Math.round(((n >> 8) & 0xff) * k)));
+  const b = Math.max(0, Math.min(255, Math.round((n & 0xff) * k)));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
 
 export default function TireStudio() {
   const [font, setFont] = useState<LoadedFont | null>(null);
@@ -183,7 +200,10 @@ export default function TireStudio() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [bgColor, setBgColor] = useState<string>(DEFAULT_BG);
+  const [bgIntensity, setBgIntensity] = useState<number>(1);
   const [rimColor, setRimColor] = useState<string>("#dcdce2");
+  const [rimIntensity, setRimIntensity] = useState<number>(1);
+  const [tireIntensity, setTireIntensity] = useState<number>(1);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
@@ -230,13 +250,13 @@ export default function TireStudio() {
         camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
       >
         <SceneWireup rendererRef={rendererRef} />
-        <CanvasBackground transparent={transparentBg} color={bgColor} />
+        <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
         <ambientLight intensity={0.04} color={lighting.frontColor} />
         {/* Top */}
         <directionalLight
           position={[0, 10, 2]}
-          intensity={2.2 * Math.pow(lighting.intensity, 1.8)}
+          intensity={2.2 * Math.pow(lighting.intensity, 1.8) * lighting.topIntensity}
           color={lighting.topColor}
           castShadow
           shadow-mapSize-width={1024}
@@ -245,13 +265,13 @@ export default function TireStudio() {
         {/* Front */}
         <directionalLight
           position={[4, 2, 8]}
-          intensity={1.4 * Math.pow(lighting.intensity, 1.8)}
+          intensity={1.4 * Math.pow(lighting.intensity, 1.8) * lighting.frontIntensity}
           color={lighting.frontColor}
         />
         {/* Bottom */}
         <directionalLight
           position={[-3, -6, -4]}
-          intensity={0.8 * Math.pow(lighting.intensity, 1.8)}
+          intensity={0.8 * Math.pow(lighting.intensity, 1.8) * lighting.bottomIntensity}
           color={lighting.bottomColor}
         />
 
@@ -260,13 +280,20 @@ export default function TireStudio() {
             preset="warehouse"
             environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
           />
-          {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
+          {font && (
+            <TireMesh
+              font={font}
+              params={{ ...params, tireColor: scaleHex(params.tireColor, tireIntensity) }}
+              onReady={captureGroup}
+            />
+          )}
           {params.rimStyle !== "procedural" && (() => {
             const rim = findRim(params.rimStyle);
             if (!rim) return null;
             // Fit the model roughly inside the inner rim opening + tire width.
+            // Match the procedural rim: reach the tire face, only mildly inset by rimDepth.
             const targetDiameter = (params.rimRadius + 0.02) * 2.05;
-            const targetWidth = params.width * 0.92;
+            const targetWidth = params.width * (1 - params.rimDepth * 0.2);
             return (
               <CustomRim
                 key={rim.id}
@@ -274,11 +301,12 @@ export default function TireStudio() {
                 fitScale={rim.fitScale}
                 targetDiameter={targetDiameter}
                 targetWidth={targetWidth}
-                metalColor={rimColor}
+                metalColor={scaleHex(rimColor, rimIntensity)}
               />
             );
           })()}
         </Suspense>
+
 
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
       </Canvas>
@@ -412,6 +440,8 @@ export default function TireStudio() {
               label="Tire colour"
               value={params.tireColor}
               onChange={(v) => set("tireColor", v)}
+              intensity={tireIntensity}
+              onIntensityChange={setTireIntensity}
             />
           </CollapsibleSection>
 
@@ -449,7 +479,13 @@ export default function TireStudio() {
                 Detailed rims are loaded from CDN and auto-fit to the tire.
               </p>
             </div>
-            <ColorRow label="Rim colour" value={rimColor} onChange={setRimColor} />
+            <ColorRow
+              label="Rim colour"
+              value={rimColor}
+              onChange={setRimColor}
+              intensity={rimIntensity}
+              onIntensityChange={setRimIntensity}
+            />
             <Slider label="Rim size" min={0.2} max={1.6} step={0.02} value={params.rimRadius} onChange={(v) => set("rimRadius", v)} />
             <Slider label="Rim depth" min={0} max={1} step={0.02} value={params.rimDepth} onChange={(v) => set("rimDepth", v)} />
           </CollapsibleSection>
@@ -477,21 +513,29 @@ export default function TireStudio() {
               label="Background"
               value={bgColor}
               onChange={setBgColor}
+              intensity={bgIntensity}
+              onIntensityChange={setBgIntensity}
             />
             <ColorRow
               label="Top light"
               value={lighting.topColor}
               onChange={(v) => setLighting((l) => ({ ...l, topColor: v }))}
+              intensity={lighting.topIntensity}
+              onIntensityChange={(v) => setLighting((l) => ({ ...l, topIntensity: v }))}
             />
             <ColorRow
               label="Front light"
               value={lighting.frontColor}
               onChange={(v) => setLighting((l) => ({ ...l, frontColor: v }))}
+              intensity={lighting.frontIntensity}
+              onIntensityChange={(v) => setLighting((l) => ({ ...l, frontIntensity: v }))}
             />
             <ColorRow
               label="Bottom light"
               value={lighting.bottomColor}
               onChange={(v) => setLighting((l) => ({ ...l, bottomColor: v }))}
+              intensity={lighting.bottomIntensity}
+              onIntensityChange={(v) => setLighting((l) => ({ ...l, bottomIntensity: v }))}
             />
             <Slider
               label="Intensity"
@@ -562,26 +606,52 @@ function ColorRow({
   label,
   value,
   onChange,
+  intensity,
+  onIntensityChange,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  intensity?: number;
+  onIntensityChange?: (v: number) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3">
-      <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-400">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-yellow-300/90">{value}</span>
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-7 w-10 cursor-pointer rounded-md border border-white/10 bg-black/30"
-        />
-      </div>
-    </label>
+    <div className="flex flex-col gap-1.5">
+      <label className="flex items-center justify-between gap-3">
+        <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-400">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-yellow-300/90">{value}</span>
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-7 w-10 cursor-pointer rounded-md border border-white/10 bg-black/30"
+          />
+        </div>
+      </label>
+      {typeof intensity === "number" && onIntensityChange && (
+        <label className="flex items-center gap-2">
+          <span className="w-16 text-[9px] uppercase tracking-[0.15em] text-neutral-500">
+            Intensity
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={3}
+            step={0.05}
+            value={intensity}
+            onChange={(e) => onIntensityChange(parseFloat(e.target.value))}
+            className="flex-1 accent-yellow-400"
+          />
+          <span className="w-8 text-right text-[10px] text-yellow-300/80">
+            {intensity.toFixed(2)}
+          </span>
+        </label>
+      )}
+    </div>
   );
 }
+
 
 
 function CollapsibleSection({
