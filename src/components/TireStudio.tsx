@@ -200,7 +200,10 @@ export default function TireStudio() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [bgColor, setBgColor] = useState<string>(DEFAULT_BG);
+  const [bgIntensity, setBgIntensity] = useState<number>(1);
   const [rimColor, setRimColor] = useState<string>("#dcdce2");
+  const [rimIntensity, setRimIntensity] = useState<number>(1);
+  const [tireIntensity, setTireIntensity] = useState<number>(1);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
