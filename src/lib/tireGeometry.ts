@@ -332,7 +332,9 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   if (!p.rimStyle || p.rimStyle === "procedural") {
     const rimOuter = innerR + 0.02;
     const rimInner = rimOuter * 0.55;
-    const rimWidth = p.width * (0.55 + 0.35 * (1 - p.rimDepth));
+    // Rim spans the FULL tire width, with rimDepth only mildly inset (max 20%)
+    // so the rim always reaches the tire face even when width expands.
+    const rimWidth = p.width * (1 - p.rimDepth * 0.2);
     // Rim barrel
     const rimBarrel = new THREE.CylinderGeometry(rimOuter, rimOuter, rimWidth, 64, 1, true);
     disposables.push(rimBarrel);
