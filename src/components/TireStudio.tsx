@@ -479,7 +479,13 @@ export default function TireStudio() {
                 Detailed rims are loaded from CDN and auto-fit to the tire.
               </p>
             </div>
-            <ColorRow label="Rim colour" value={rimColor} onChange={setRimColor} />
+            <ColorRow
+              label="Rim colour"
+              value={rimColor}
+              onChange={setRimColor}
+              intensity={rimIntensity}
+              onIntensityChange={setRimIntensity}
+            />
             <Slider label="Rim size" min={0.2} max={1.6} step={0.02} value={params.rimRadius} onChange={(v) => set("rimRadius", v)} />
             <Slider label="Rim depth" min={0} max={1} step={0.02} value={params.rimDepth} onChange={(v) => set("rimDepth", v)} />
           </CollapsibleSection>
