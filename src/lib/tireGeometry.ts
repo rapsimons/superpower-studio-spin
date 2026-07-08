@@ -2,6 +2,27 @@ import * as THREE from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { LoadedFont } from "./tireFont";
 import { getGlyphInfo } from "./tireFont";
+import baseColorAsset from "@/assets/tire/basecolor.png.asset.json";
+import normalAsset from "@/assets/tire/normal.png.asset.json";
+
+// Module-level texture cache — load once, reuse for every rebuild.
+let _rubberMap: THREE.Texture | null = null;
+let _rubberNormal: THREE.Texture | null = null;
+function getRubberTextures(): { map: THREE.Texture; normalMap: THREE.Texture } {
+  const loader = new THREE.TextureLoader();
+  if (!_rubberMap) {
+    _rubberMap = loader.load(baseColorAsset.url);
+    _rubberMap.wrapS = _rubberMap.wrapT = THREE.RepeatWrapping;
+    _rubberMap.colorSpace = THREE.SRGBColorSpace;
+    _rubberMap.anisotropy = 8;
+  }
+  if (!_rubberNormal) {
+    _rubberNormal = loader.load(normalAsset.url);
+    _rubberNormal.wrapS = _rubberNormal.wrapT = THREE.RepeatWrapping;
+    _rubberNormal.anisotropy = 8;
+  }
+  return { map: _rubberMap, normalMap: _rubberNormal };
+}
 
 export type TireParams = {
   text: string;
