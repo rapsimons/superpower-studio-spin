@@ -8,8 +8,7 @@ type LooseLoader = { setMeshoptDecoder: (d: unknown) => void };
 import gt2Asset from "@/assets/rims/gt2.glb.asset.json";
 import sportAsset from "@/assets/rims/sport.glb.asset.json";
 import janteAsset from "@/assets/rims/jante.glb.asset.json";
-import classicAsset from "@/assets/rims/classic.glb.asset.json";
-import offroadAsset from "@/assets/rims/offroad.glb.asset.json";
+import kamazAsset from "@/assets/rims/kamaz.glb.asset.json";
 
 export const RIM_LIBRARY: Array<{
   id: string;
@@ -21,8 +20,7 @@ export const RIM_LIBRARY: Array<{
   { id: "gt2", label: "Porsche GT2", url: gt2Asset.url, fitScale: 1.0 },
   { id: "sport", label: "Sport Custom", url: sportAsset.url, fitScale: 1.0 },
   { id: "jante", label: "Jante Deep", url: janteAsset.url, fitScale: 1.0 },
-  { id: "classic", label: "Classic 5-spoke", url: classicAsset.url, fitScale: 1.0 },
-  { id: "offroad", label: "Offroad Beadlock", url: offroadAsset.url, fitScale: 1.0 },
+  { id: "kamaz", label: "Kamaz Truck", url: kamazAsset.url, fitScale: 1.0 },
 ];
 
 export function findRim(id: string) {
