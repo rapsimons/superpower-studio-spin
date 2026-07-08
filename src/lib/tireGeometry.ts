@@ -224,7 +224,7 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
     roughness: 0.92,
     metalness: 0.02,
   });
-  disposables.push(rubberMap2, rubberNormal2);
+  disposables.push(rubberMap2 as unknown as THREE.Material, rubberNormal2 as unknown as THREE.Material);
   const textMat = new THREE.MeshStandardMaterial({
     color: tireHex,
     roughness: 0.82,
