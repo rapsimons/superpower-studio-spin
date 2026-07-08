@@ -250,13 +250,13 @@ export default function TireStudio() {
         camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
       >
         <SceneWireup rendererRef={rendererRef} />
-        <CanvasBackground transparent={transparentBg} color={bgColor} />
+        <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
         <ambientLight intensity={0.04} color={lighting.frontColor} />
         {/* Top */}
         <directionalLight
           position={[0, 10, 2]}
-          intensity={2.2 * Math.pow(lighting.intensity, 1.8)}
+          intensity={2.2 * Math.pow(lighting.intensity, 1.8) * lighting.topIntensity}
           color={lighting.topColor}
           castShadow
           shadow-mapSize-width={1024}
@@ -265,13 +265,13 @@ export default function TireStudio() {
         {/* Front */}
         <directionalLight
           position={[4, 2, 8]}
-          intensity={1.4 * Math.pow(lighting.intensity, 1.8)}
+          intensity={1.4 * Math.pow(lighting.intensity, 1.8) * lighting.frontIntensity}
           color={lighting.frontColor}
         />
         {/* Bottom */}
         <directionalLight
           position={[-3, -6, -4]}
-          intensity={0.8 * Math.pow(lighting.intensity, 1.8)}
+          intensity={0.8 * Math.pow(lighting.intensity, 1.8) * lighting.bottomIntensity}
           color={lighting.bottomColor}
         />
 
@@ -280,13 +280,20 @@ export default function TireStudio() {
             preset="warehouse"
             environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
           />
-          {font && <TireMesh font={font} params={params} onReady={captureGroup} />}
+          {font && (
+            <TireMesh
+              font={font}
+              params={{ ...params, tireColor: scaleHex(params.tireColor, tireIntensity) }}
+              onReady={captureGroup}
+            />
+          )}
           {params.rimStyle !== "procedural" && (() => {
             const rim = findRim(params.rimStyle);
             if (!rim) return null;
             // Fit the model roughly inside the inner rim opening + tire width.
+            // Match the procedural rim: reach the tire face, only mildly inset by rimDepth.
             const targetDiameter = (params.rimRadius + 0.02) * 2.05;
-            const targetWidth = params.width * 0.92;
+            const targetWidth = params.width * (1 - params.rimDepth * 0.2);
             return (
               <CustomRim
                 key={rim.id}
@@ -294,11 +301,12 @@ export default function TireStudio() {
                 fitScale={rim.fitScale}
                 targetDiameter={targetDiameter}
                 targetWidth={targetWidth}
-                metalColor={rimColor}
+                metalColor={scaleHex(rimColor, rimIntensity)}
               />
             );
           })()}
         </Suspense>
+
 
         <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
       </Canvas>
