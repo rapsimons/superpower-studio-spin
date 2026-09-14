@@ -359,9 +359,6 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
         group.add(mesh);
       }
     } else {
-      const repeatStep = built.width + p.wordSpacing;
-      const copies = Math.max(1, Math.ceil(circumference / repeatStep));
-
       const rowsMid = (rowCount - 1) / 2;
       for (let row = 0; row < rowCount; row++) {
         const built = builtPhrases[row % builtPhrases.length];
