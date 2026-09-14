@@ -8,6 +8,17 @@ import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
 import { CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
 
+type EditorSection = "text" | "tread" | "tire" | "rim" | "lighting" | "export";
+
+const EDITOR_TABS: { id: EditorSection; label: string }[] = [
+  { id: "text", label: "Text" },
+  { id: "tread", label: "Text tread" },
+  { id: "tire", label: "Tire" },
+  { id: "rim", label: "Rim" },
+  { id: "lighting", label: "Lighting" },
+  { id: "export", label: "Export" },
+];
+
 const DEFAULTS: TireParams = {
   text: "SUPERPOWER",
   radius: 1.6,
@@ -198,7 +209,7 @@ export default function TireStudio() {
   const [fontError, setFontError] = useState<string | null>(null);
   const [params, setParams] = useState<TireParams>(DEFAULTS);
   const [transparentBg, setTransparentBg] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [activeMobileSection, setActiveMobileSection] = useState<EditorSection>("text");
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [bgColor, setBgColor] = useState<string>(DEFAULT_BG);
   const [bgIntensity, setBgIntensity] = useState<number>(1);
@@ -243,13 +254,14 @@ export default function TireStudio() {
   );
 
   return (
-    <div className="relative h-[100dvh] w-screen overflow-hidden bg-neutral-950 text-neutral-300">
-      <Canvas
-        shadows
-        dpr={[1, 2]}
-        gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
-        camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
-      >
+    <div className="relative min-h-[100dvh] w-full overflow-x-hidden bg-neutral-950 text-neutral-300 md:h-[100dvh] md:overflow-hidden">
+      <div className="relative h-[52dvh] min-h-[340px] max-h-[460px] w-full md:absolute md:inset-0 md:h-full md:max-h-none">
+        <Canvas
+          shadows
+          dpr={[1, 2]}
+          gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
+          camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
+        >
         <SceneWireup rendererRef={rendererRef} />
         <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
@@ -308,31 +320,31 @@ export default function TireStudio() {
         </Suspense>
 
 
-        <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
-      </Canvas>
+          <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
+        </Canvas>
 
       {/* Grain overlay */}
-      {lighting.grain > 0 && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-[5] mix-blend-overlay"
+        {lighting.grain > 0 && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[5] mix-blend-overlay"
           style={{
             opacity: Math.min(0.9, 0.25 + lighting.grain * 0.08),
             backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='${(1.4 / Math.max(0.4, lighting.grain)).toFixed(3)}' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`,
             backgroundSize: `${Math.round(120 + lighting.grain * 40)}px`,
           }}
-        />
-      )}
+          />
+        )}
 
 
 
       {/* Top bar */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-4">
         <div className="pointer-events-auto rounded-2xl border border-white/5 bg-black/20 px-3 py-2 backdrop-blur-xl">
           <p className="text-[9px] uppercase tracking-[0.35em] text-yellow-300/70">Superpower</p>
           <h1 className="text-base font-bold tracking-wider text-neutral-200">Tire Studio</h1>
         </div>
-        <div className="pointer-events-auto flex gap-2">
+          <div className="pointer-events-auto hidden shrink-0 gap-2 md:flex">
           <button
             onClick={() => exportPNG(transparentBg)}
             className="rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 backdrop-blur-xl hover:bg-white/10"
@@ -345,20 +357,13 @@ export default function TireStudio() {
           >
             GLB
           </button>
-          <button
-            onClick={() => setPanelOpen((o) => !o)}
-            className="rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 backdrop-blur-xl hover:bg-white/10 sm:hidden"
-          >
-            {panelOpen ? "Hide" : "Edit"}
-          </button>
+          </div>
         </div>
       </div>
 
-      {/* Side panel — dark liquid glass, ~80% transparent */}
+      {/* Mobile editor sits below the live tyre; desktop keeps the floating side panel. */}
       <div
-        className={`absolute bottom-3 right-3 top-20 z-10 flex w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl border border-white/5 bg-black/20 backdrop-blur-2xl backdrop-saturate-150 transition-transform sm:w-[340px] ${
-          panelOpen ? "translate-x-0" : "translate-x-[110%]"
-        }`}
+        className="relative z-10 flex min-h-[48dvh] w-full flex-col overflow-hidden border-t border-white/5 bg-black/20 backdrop-blur-2xl backdrop-saturate-150 md:absolute md:bottom-3 md:right-3 md:top-20 md:min-h-0 md:w-[340px] md:rounded-3xl md:border"
         style={{
           boxShadow:
             "inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.5), 0 20px 60px -20px rgba(0,0,0,0.8)",
@@ -373,11 +378,34 @@ export default function TireStudio() {
               "radial-gradient(120% 60% at 50% 0%, rgba(255,214,64,0.10), transparent 60%)",
           }}
         />
-        <div className="relative flex-1 overflow-y-auto p-4">
+        <div
+          role="tablist"
+          aria-label="Tyre editor settings"
+          className="relative z-10 flex shrink-0 gap-1 overflow-x-auto border-b border-white/5 bg-neutral-950/70 px-3 py-2 md:hidden"
+        >
+          {EDITOR_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeMobileSection === tab.id}
+              onClick={() => setActiveMobileSection(tab.id)}
+              className={`shrink-0 rounded-md px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                activeMobileSection === tab.id
+                  ? "bg-yellow-400 text-neutral-950"
+                  : "text-neutral-400 hover:bg-white/5 hover:text-neutral-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative flex-1 p-3 md:overflow-y-auto md:p-4">
           <CollapsibleSection
             title="Text"
             open={openSections.text}
             onToggle={() => toggle("text")}
+            mobileActive={activeMobileSection === "text"}
           >
             <textarea
               rows={2}
@@ -431,9 +459,26 @@ export default function TireStudio() {
           </CollapsibleSection>
 
           <CollapsibleSection
+            title="Text tread"
+            open={openSections.tread}
+            onToggle={() => toggle("tread")}
+            mobileActive={activeMobileSection === "tread"}
+          >
+            <Slider label="Letter height" min={0.1} max={1.6} step={0.02} value={params.fontSize} onChange={(v) => set("fontSize", v)} />
+            <Slider label="Letter spacing" min={-0.05} max={0.3} step={0.005} value={params.letterSpacing} onChange={(v) => set("letterSpacing", v)} />
+            <Slider label="Phrase gap" min={-0.5} max={2} step={0.01} value={params.wordSpacing} onChange={(v) => set("wordSpacing", v)} />
+            <Slider label="Line spacing" min={-0.4} max={0.6} step={0.005} value={params.lineSpacing} onChange={(v) => set("lineSpacing", v)} />
+            <Slider label="Stagger" min={0} max={10} step={1} value={params.stagger} onChange={(v) => set("stagger", v)} format={(v) => v.toFixed(0)} />
+            <Slider label="Extrusion (raised)" min={0.02} max={0.5} step={0.01} value={params.extrusion} onChange={(v) => set("extrusion", v)} />
+            <Slider label="Bevel" min={0} max={1} step={0.05} value={params.bevel} onChange={(v) => set("bevel", v)} />
+            <Slider label="Rows (0 = auto)" min={0} max={12} step={1} value={params.rowCount} onChange={(v) => set("rowCount", v)} format={(v) => v.toFixed(0)} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
             title="Tire"
             open={openSections.tire}
             onToggle={() => toggle("tire")}
+            mobileActive={activeMobileSection === "tire"}
           >
             <Slider label="Diameter" min={0.8} max={3.0} step={0.05} value={params.radius} onChange={(v) => set("radius", v)} />
             <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
@@ -452,6 +497,7 @@ export default function TireStudio() {
             title="Rim"
             open={openSections.rim}
             onToggle={() => toggle("rim")}
+            mobileActive={activeMobileSection === "rim"}
           >
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
@@ -494,24 +540,10 @@ export default function TireStudio() {
           </CollapsibleSection>
 
           <CollapsibleSection
-            title="Text tread"
-            open={openSections.tread}
-            onToggle={() => toggle("tread")}
-          >
-            <Slider label="Letter height" min={0.1} max={1.6} step={0.02} value={params.fontSize} onChange={(v) => set("fontSize", v)} />
-            <Slider label="Letter spacing" min={-0.05} max={0.3} step={0.005} value={params.letterSpacing} onChange={(v) => set("letterSpacing", v)} />
-            <Slider label="Phrase gap" min={-0.5} max={2} step={0.01} value={params.wordSpacing} onChange={(v) => set("wordSpacing", v)} />
-            <Slider label="Line spacing" min={-0.4} max={0.6} step={0.005} value={params.lineSpacing} onChange={(v) => set("lineSpacing", v)} />
-            <Slider label="Stagger" min={0} max={10} step={1} value={params.stagger} onChange={(v) => set("stagger", v)} format={(v) => v.toFixed(0)} />
-            <Slider label="Extrusion (raised)" min={0.02} max={0.5} step={0.01} value={params.extrusion} onChange={(v) => set("extrusion", v)} />
-            <Slider label="Bevel" min={0} max={1} step={0.05} value={params.bevel} onChange={(v) => set("bevel", v)} />
-            <Slider label="Rows (0 = auto)" min={0} max={12} step={1} value={params.rowCount} onChange={(v) => set("rowCount", v)} format={(v) => v.toFixed(0)} />
-          </CollapsibleSection>
-
-          <CollapsibleSection
             title="Lighting"
             open={openSections.lighting}
             onToggle={() => toggle("lighting")}
+            mobileActive={activeMobileSection === "lighting"}
           >
             <ColorRow
               label="Background"
@@ -565,6 +597,7 @@ export default function TireStudio() {
             title="Export"
             open={openSections.export}
             onToggle={() => toggle("export")}
+            mobileActive={activeMobileSection === "export"}
           >
             <label className="flex items-center gap-2 text-[11px] text-neutral-300">
               <input
@@ -662,19 +695,24 @@ function CollapsibleSection({
   title,
   open,
   onToggle,
+  mobileActive,
   children,
 }: {
   title: string;
   open: boolean;
   onToggle: () => void;
+  mobileActive: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-3 overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02]">
+    <section
+      role="tabpanel"
+      className={`${mobileActive ? "block" : "hidden"} overflow-hidden md:mb-3 md:block md:rounded-2xl md:border md:border-white/5 md:bg-white/[0.02]`}
+    >
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
+        className="hidden w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-white/[0.04] md:flex"
       >
         <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-yellow-300">
           {title}
@@ -684,12 +722,12 @@ function CollapsibleSection({
         />
       </button>
       <div
-        className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+        className={`grid grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-out ${open ? "md:grid-rows-[1fr]" : "md:grid-rows-[0fr]"}`}
       >
         <div className="overflow-hidden">
-          <div className="flex flex-col gap-3 px-3 pb-3 pt-1">{children}</div>
+          <div className="flex flex-col gap-4 pb-4 md:gap-3 md:px-3 md:pb-3 md:pt-1">{children}</div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
