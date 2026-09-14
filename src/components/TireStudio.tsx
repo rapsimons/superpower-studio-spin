@@ -20,6 +20,7 @@ const DEFAULTS: TireParams = {
   letterSpacing: 0.0,
   wordSpacing: 0.04,
   lineSpacing: 0.02,
+  stagger: 0,
   extrusion: 0.16,
   bevel: 0.4,
   rowCount: 0,
@@ -290,10 +291,9 @@ export default function TireStudio() {
           {params.rimStyle !== "procedural" && (() => {
             const rim = findRim(params.rimStyle);
             if (!rim) return null;
-            // Fit the model roughly inside the inner rim opening + tire width.
-            // Match the procedural rim: reach the tire face, only mildly inset by rimDepth.
+            // Match both outer tire faces regardless of the model's original proportions.
             const targetDiameter = (params.rimRadius + 0.02) * 2.05;
-            const targetWidth = params.width * (1 - params.rimDepth * 0.2);
+            const targetWidth = params.width + 0.04;
             return (
               <CustomRim
                 key={rim.id}
@@ -379,12 +379,15 @@ export default function TireStudio() {
             open={openSections.text}
             onToggle={() => toggle("text")}
           >
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={params.text}
-              onChange={(e) => set("text", e.target.value.toUpperCase())}
-              className="w-full rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-sm uppercase tracking-wider text-neutral-200 placeholder:text-neutral-500 focus:border-yellow-400/60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
-              placeholder="SUPERPOWER"
+              onChange={(e) => {
+                const lines = e.target.value.toUpperCase().split(/\r?\n/).slice(0, 2);
+                set("text", lines.join("\n"));
+              }}
+              className="w-full resize-none rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-sm uppercase tracking-wider text-neutral-200 placeholder:text-neutral-500 focus:border-yellow-400/60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
+              placeholder={"SUPERPOWER\nSTUDIO"}
             />
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
@@ -499,6 +502,7 @@ export default function TireStudio() {
             <Slider label="Letter spacing" min={-0.05} max={0.3} step={0.005} value={params.letterSpacing} onChange={(v) => set("letterSpacing", v)} />
             <Slider label="Phrase gap" min={-0.5} max={2} step={0.01} value={params.wordSpacing} onChange={(v) => set("wordSpacing", v)} />
             <Slider label="Line spacing" min={-0.4} max={0.6} step={0.005} value={params.lineSpacing} onChange={(v) => set("lineSpacing", v)} />
+            <Slider label="Stagger" min={0} max={10} step={1} value={params.stagger} onChange={(v) => set("stagger", v)} format={(v) => v.toFixed(0)} />
             <Slider label="Extrusion (raised)" min={0.02} max={0.5} step={0.01} value={params.extrusion} onChange={(v) => set("extrusion", v)} />
             <Slider label="Bevel" min={0} max={1} step={0.05} value={params.bevel} onChange={(v) => set("bevel", v)} />
             <Slider label="Rows (0 = auto)" min={0} max={12} step={1} value={params.rowCount} onChange={(v) => set("rowCount", v)} format={(v) => v.toFixed(0)} />

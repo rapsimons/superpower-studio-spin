@@ -94,14 +94,15 @@ export function CustomRim({
     else if (axial.axis === "z") wrapper.rotation.x = Math.PI / 2;
     // if axial === "y" no rotation needed
 
-    // Uniform scale: fit radial to targetDiameter, cap by targetWidth
+    // Scale radial and axial dimensions independently. A uniform scale left
+    // wide tires with the rim buried in the middle, because diameter became
+    // the limiting dimension before the rim could reach both sidewalls.
     const scaleRadial = targetDiameter / Math.max(radialMax, 0.001);
     const scaleAxial = targetWidth / Math.max(axial.size, 0.001);
-    const scale = Math.min(scaleRadial, scaleAxial) * fitScale;
 
     const outer = new THREE.Group();
     outer.add(wrapper);
-    outer.scale.setScalar(scale);
+    outer.scale.set(scaleRadial * fitScale, scaleAxial, scaleRadial * fitScale);
     // Match tire group orientation (tire group has rotation.z = PI/2)
     outer.rotation.z = Math.PI / 2;
 

@@ -39,6 +39,7 @@ export type TireParams = {
   letterSpacing: number; // extra space between letters (world units)
   wordSpacing: number; // extra between phrase repeats
   lineSpacing: number; // extra between rows (world units)
+  stagger: number; // 0..10, offsets every second letter by up to half its height
   extrusion: number; // raised height above tire surface
   bevel: number; // 0..1
   // Layout
@@ -67,6 +68,7 @@ function buildPhraseFlat(
   text: string,
   targetHeight: number,
   letterSpacing: number,
+  stagger: number,
   extrusion: number,
   bevel: number,
 ): { geom: THREE.BufferGeometry; width: number } | null {
@@ -82,6 +84,7 @@ function buildPhraseFlat(
     bevelSegments: 2,
     curveSegments: 6,
   };
+  let glyphIndex = 0;
   for (const ch of Array.from(text)) {
     if (ch === " ") {
       cursor += font.unitsPerEm * 0.35 * scale + letterSpacing;
@@ -91,10 +94,12 @@ function buildPhraseFlat(
     if (info.shapes.length) {
       const g = new THREE.ExtrudeGeometry(info.shapes, extrudeSettings);
       g.scale(scale, scale, 1);
-      g.translate(cursor, 0, 0);
+      const staggerOffset = glyphIndex % 2 === 1 ? targetHeight * 0.5 * (stagger / 10) : 0;
+      g.translate(cursor, staggerOffset, 0);
       geoms.push(g);
     }
     cursor += info.advanceWidth * scale + letterSpacing;
+    glyphIndex += 1;
   }
   if (!geoms.length) return null;
   const merged = BufferGeometryUtils.mergeGeometries(geoms, false);
@@ -312,19 +317,28 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   // factor doesn't get applied twice (which pushed text far outside the tire).
   const equatorR = outerR;
   const circumference = 2 * Math.PI * equatorR * bulge;
-  const phrase = p.text || "SUPERPOWER";
+  const phrases = p.text
+    .split(/\r?\n/)
+    .slice(0, 2)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!phrases.length) phrases.push("SUPERPOWER");
 
-  // We tile the phrase around the circumference. Compute how many copies fit and
-  // stretch the joining space so they meet exactly.
-  const built = buildPhraseFlat(
-    font,
-    phrase,
-    rowSize,
-    p.letterSpacing,
-    p.extrusion,
-    p.bevel,
-  );
-  if (built) {
+  const builtPhrases = phrases
+    .map((phrase) =>
+      buildPhraseFlat(
+        font,
+        phrase,
+        rowSize,
+        p.letterSpacing,
+        p.stagger,
+        p.extrusion,
+        p.bevel,
+      ),
+    )
+    .filter((built): built is { geom: THREE.BufferGeometry; width: number } => built !== null);
+
+  if (builtPhrases.length) {
     if (p.textDirection === "vertical") {
       // Letters run across the tire width (left-to-right on face).
       // Distribute phrase copies angularly around the tire; each copy is
@@ -332,6 +346,7 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
       const tangentialStep = Math.max(rowSize + p.wordSpacing, rowSize * 0.7, 0.05);
       const copies = Math.max(3, Math.ceil(circumference / tangentialStep));
       for (let c = 0; c < copies; c++) {
+        const built = builtPhrases[c % builtPhrases.length];
         const thetaC = ((c * tangentialStep) / circumference) * Math.PI * 2;
         const clone = built.geom.clone();
         // Center phrase: X (which becomes axial) around 0, Y (baseline) around 0
@@ -344,11 +359,11 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
         group.add(mesh);
       }
     } else {
-      const repeatStep = built.width + p.wordSpacing;
-      const copies = Math.max(1, Math.ceil(circumference / repeatStep));
-
       const rowsMid = (rowCount - 1) / 2;
       for (let row = 0; row < rowCount; row++) {
+        const built = builtPhrases[row % builtPhrases.length];
+        const repeatStep = Math.max(rowSize * 0.15, built.width + p.wordSpacing);
+        const copies = Math.max(1, Math.ceil(circumference / repeatStep));
         const yCenter = (row - rowsMid) * lineStep;
         const rowAngleOffset =
           (row % 2) * ((repeatStep * 0.5) / circumference) * Math.PI * 2;
@@ -364,16 +379,15 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
         }
       }
     }
-    built.geom.dispose();
+    for (const built of builtPhrases) built.geom.dispose();
   }
 
   // Rim (chrome disc + inner cylinder) — only when procedural style.
   if (!p.rimStyle || p.rimStyle === "procedural") {
     const rimOuter = innerR + 0.02;
     const rimInner = rimOuter * 0.55;
-    // Rim spans the FULL tire width, with rimDepth only mildly inset (max 20%)
-    // so the rim always reaches the tire face even when width expands.
-    const rimWidth = p.width * (1 - p.rimDepth * 0.2);
+    // The rim always meets both tire faces, even as tire width changes.
+    const rimWidth = p.width + 0.04;
     // Rim barrel
     const rimBarrel = new THREE.CylinderGeometry(rimOuter, rimOuter, rimWidth, 64, 1, true);
     disposables.push(rimBarrel);
