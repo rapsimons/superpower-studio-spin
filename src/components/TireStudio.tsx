@@ -133,6 +133,24 @@ function SceneWireup({
   return null;
 }
 
+function ResponsiveCamera({ distance }: { distance: number }) {
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    const mobileScale = size.width < 768 ? 1.55 : 1;
+    camera.position.set(
+      distance * 0.7 * mobileScale,
+      distance * 0.3 * mobileScale,
+      distance * mobileScale,
+    );
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, distance, size.width]);
+
+  return null;
+}
+
 function Slider({
   label,
   value,
@@ -263,6 +281,7 @@ export default function TireStudio() {
           camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
         >
         <SceneWireup rendererRef={rendererRef} />
+        <ResponsiveCamera distance={camDist} />
         <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
         <ambientLight intensity={0.04} color={lighting.frontColor} />
@@ -339,10 +358,11 @@ export default function TireStudio() {
 
 
       {/* Top bar */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-4">
-        <div className="pointer-events-auto rounded-2xl border border-white/5 bg-black/20 px-3 py-2 backdrop-blur-xl">
-          <p className="text-[9px] uppercase tracking-[0.35em] text-yellow-300/70">Superpower</p>
-          <h1 className="text-base font-bold tracking-wider text-neutral-200">Tire Studio</h1>
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-3 md:p-4">
+        <div className="pointer-events-auto min-w-0 rounded-lg border border-white/10 bg-black/35 px-3 py-2 backdrop-blur-xl md:rounded-2xl md:bg-black/20">
+          <h1 className="truncate whitespace-nowrap text-xs font-bold uppercase tracking-[0.16em] text-neutral-200 md:text-base md:normal-case md:tracking-wider">
+            <span className="text-yellow-300/80 md:hidden">Superpower </span>Tire Studio
+          </h1>
         </div>
           <div className="pointer-events-auto hidden shrink-0 gap-2 md:flex">
           <button
@@ -363,7 +383,7 @@ export default function TireStudio() {
 
       {/* Mobile editor sits below the live tyre; desktop keeps the floating side panel. */}
       <div
-        className="relative z-10 flex min-h-[48dvh] w-full flex-col overflow-hidden border-t border-white/5 bg-black/20 backdrop-blur-2xl backdrop-saturate-150 md:absolute md:bottom-3 md:right-3 md:top-20 md:min-h-0 md:w-[340px] md:rounded-3xl md:border"
+        className="relative z-10 flex h-[48dvh] w-full flex-col overflow-hidden border-t border-white/10 bg-black/35 backdrop-blur-2xl backdrop-saturate-150 md:absolute md:bottom-3 md:right-3 md:top-20 md:h-auto md:min-h-0 md:w-[340px] md:rounded-3xl md:border md:bg-black/20"
         style={{
           boxShadow:
             "inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.5), 0 20px 60px -20px rgba(0,0,0,0.8)",
@@ -381,7 +401,7 @@ export default function TireStudio() {
         <div
           role="tablist"
           aria-label="Tyre editor settings"
-          className="relative z-10 flex shrink-0 gap-1 overflow-x-auto border-b border-white/5 bg-neutral-950/70 px-3 py-2 md:hidden"
+          className="relative z-10 flex shrink-0 gap-1 overflow-x-auto border-b border-white/10 bg-black/45 px-3 py-2 backdrop-blur-2xl md:hidden"
         >
           {EDITOR_TABS.map((tab) => (
             <button
@@ -400,7 +420,7 @@ export default function TireStudio() {
             </button>
           ))}
         </div>
-        <div className="relative flex-1 p-3 md:overflow-y-auto md:p-4">
+        <div className="mobile-editor-scroll relative min-h-0 flex-1 overflow-y-scroll p-3 [scrollbar-gutter:stable] md:overflow-y-auto md:p-4">
           <CollapsibleSection
             title="Text"
             open={openSections.text}
