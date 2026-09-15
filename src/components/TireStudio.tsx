@@ -138,7 +138,7 @@ function ResponsiveCamera({ distance }: { distance: number }) {
 
   useEffect(() => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
-    const mobileScale = size.width < 768 ? 1.55 : 1;
+    const mobileScale = size.width < 768 ? 1.25 : 1;
     camera.position.set(
       distance * 0.7 * mobileScale,
       distance * 0.3 * mobileScale,
@@ -359,7 +359,7 @@ export default function TireStudio() {
 
       {/* Top bar */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-3 md:p-4">
-        <div className="pointer-events-auto min-w-0 rounded-lg border border-white/10 bg-black/35 px-3 py-2 backdrop-blur-xl md:rounded-2xl md:bg-black/20">
+        <div className="pointer-events-auto w-fit max-w-full min-w-0 rounded-lg border border-white/10 bg-black/35 px-3 py-2 backdrop-blur-xl md:rounded-2xl md:bg-black/20">
           <h1 className="truncate whitespace-nowrap text-xs font-bold uppercase tracking-[0.16em] text-neutral-200 md:text-base md:normal-case md:tracking-wider">
             <span className="text-yellow-300/80 md:hidden">Superpower </span>Tire Studio
           </h1>
