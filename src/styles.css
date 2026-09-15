@@ -142,3 +142,25 @@
     color: var(--color-foreground);
   }
 }
+
+@media (max-width: 767px) {
+  .mobile-editor-scroll {
+    scrollbar-color: var(--color-muted-foreground) transparent;
+    scrollbar-width: thin;
+  }
+
+  .mobile-editor-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .mobile-editor-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .mobile-editor-scroll::-webkit-scrollbar-thumb {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--color-muted-foreground);
+    background-clip: padding-box;
+  }
+}
