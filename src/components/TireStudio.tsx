@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback, Suspense } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { ChevronDown } from "lucide-react";
 import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib/tireFont";
@@ -72,6 +73,26 @@ function CanvasBackground({ transparent, color }: { transparent: boolean; color:
   useEffect(() => {
     scene.background = transparent ? null : new THREE.Color(color);
   }, [scene, transparent, color]);
+  return null;
+}
+
+function StudioEnvironment({ intensity }: { intensity: number }) {
+  const { gl, scene } = useThree();
+
+  useEffect(() => {
+    const generator = new THREE.PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    const target = generator.fromScene(room, 0.03);
+    scene.environment = target.texture;
+    scene.environmentIntensity = Math.max(0.18, 0.82 / Math.max(0.65, intensity));
+    return () => {
+      if (scene.environment === target.texture) scene.environment = null;
+      target.dispose();
+      room.dispose();
+      generator.dispose();
+    };
+  }, [gl, scene, intensity]);
+
   return null;
 }
 
@@ -277,12 +298,19 @@ export default function TireStudio() {
         <Canvas
           shadows
           dpr={[1, 2]}
-          gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
+          gl={{
+            antialias: true,
+            preserveDrawingBuffer: true,
+            alpha: true,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.08,
+          }}
           camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
         >
         <SceneWireup rendererRef={rendererRef} />
         <ResponsiveCamera distance={camDist} />
         <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
+        <StudioEnvironment intensity={lighting.intensity} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
         <ambientLight intensity={0.04} color={lighting.frontColor} />
         {/* Top */}
@@ -308,10 +336,6 @@ export default function TireStudio() {
         />
 
         <Suspense fallback={null}>
-          <Environment
-            preset="warehouse"
-            environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
-          />
           {font && (
             <TireMesh
               font={font}
