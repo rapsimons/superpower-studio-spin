@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback, Suspense } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment, Lightformer } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { ChevronDown } from "lucide-react";
 import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib/tireFont";
@@ -72,6 +73,26 @@ function CanvasBackground({ transparent, color }: { transparent: boolean; color:
   useEffect(() => {
     scene.background = transparent ? null : new THREE.Color(color);
   }, [scene, transparent, color]);
+  return null;
+}
+
+function StudioEnvironment({ intensity }: { intensity: number }) {
+  const { gl, scene } = useThree();
+
+  useEffect(() => {
+    const generator = new THREE.PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    const target = generator.fromScene(room, 0.03);
+    scene.environment = target.texture;
+    scene.environmentIntensity = Math.max(0.18, 0.82 / Math.max(0.65, intensity));
+    return () => {
+      if (scene.environment === target.texture) scene.environment = null;
+      target.dispose();
+      room.dispose();
+      generator.dispose();
+    };
+  }, [gl, scene, intensity]);
+
   return null;
 }
 
@@ -289,6 +310,7 @@ export default function TireStudio() {
         <SceneWireup rendererRef={rendererRef} />
         <ResponsiveCamera distance={camDist} />
         <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
+        <StudioEnvironment intensity={lighting.intensity} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
         <ambientLight intensity={0.04} color={lighting.frontColor} />
         {/* Top */}
@@ -314,15 +336,6 @@ export default function TireStudio() {
         />
 
         <Suspense fallback={null}>
-          <Environment
-            resolution={128}
-            environmentIntensity={Math.max(0.16, 0.88 / Math.max(0.65, lighting.intensity))}
-          >
-            <Lightformer form="rect" intensity={4.2} color={lighting.topColor} position={[0, 7, -2]} rotation-x={Math.PI / 2} scale={[8, 3, 1]} />
-            <Lightformer form="rect" intensity={3.2} color={lighting.frontColor} position={[3, 1, 7]} rotation-y={Math.PI} scale={[5, 7, 1]} />
-            <Lightformer form="rect" intensity={2.4} color={lighting.bottomColor} position={[-5, -3, 1]} rotation-y={Math.PI / 2} scale={[4, 6, 1]} />
-            <Lightformer form="ring" intensity={1.8} color={lighting.topColor} position={[-4, 2, -5]} scale={3} />
-          </Environment>
           {font && (
             <TireMesh
               font={font}
