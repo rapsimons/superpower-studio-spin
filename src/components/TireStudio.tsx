@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback, Suspense } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { OrbitControls, Environment, Lightformer } from "@react-three/drei";
 import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { ChevronDown } from "lucide-react";
@@ -277,7 +277,13 @@ export default function TireStudio() {
         <Canvas
           shadows
           dpr={[1, 2]}
-          gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
+          gl={{
+            antialias: true,
+            preserveDrawingBuffer: true,
+            alpha: true,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.08,
+          }}
           camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
         >
         <SceneWireup rendererRef={rendererRef} />
@@ -309,9 +315,14 @@ export default function TireStudio() {
 
         <Suspense fallback={null}>
           <Environment
-            preset="warehouse"
-            environmentIntensity={Math.max(0.05, 0.6 / Math.max(0.5, lighting.intensity))}
-          />
+            resolution={128}
+            environmentIntensity={Math.max(0.16, 0.88 / Math.max(0.65, lighting.intensity))}
+          >
+            <Lightformer form="rect" intensity={4.2} color={lighting.topColor} position={[0, 7, -2]} rotation-x={Math.PI / 2} scale={[8, 3, 1]} />
+            <Lightformer form="rect" intensity={3.2} color={lighting.frontColor} position={[3, 1, 7]} rotation-y={Math.PI} scale={[5, 7, 1]} />
+            <Lightformer form="rect" intensity={2.4} color={lighting.bottomColor} position={[-5, -3, 1]} rotation-y={Math.PI / 2} scale={[4, 6, 1]} />
+            <Lightformer form="ring" intensity={1.8} color={lighting.topColor} position={[-4, 2, -5]} scale={3} />
+          </Environment>
           {font && (
             <TireMesh
               font={font}

@@ -204,7 +204,7 @@ function buildTreadRing(
 
 export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   const group = new THREE.Group();
-  const disposables: (THREE.BufferGeometry | THREE.Material)[] = [];
+  const disposables: (THREE.BufferGeometry | THREE.Material | THREE.Texture)[] = [];
 
   const tireHex = new THREE.Color(p.tireColor || "#1a1a1a");
   const { map: rubberMap, normalMap: rubberNormal } = getRubberTextures();
@@ -221,19 +221,28 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   rubberNormal2.needsUpdate = true;
   rubberNormal2.wrapS = rubberNormal2.wrapT = THREE.RepeatWrapping;
   rubberNormal2.repeat.set(uRepeat, vRepeat);
-  const rubberMat = new THREE.MeshStandardMaterial({
+  const rubberMat = new THREE.MeshPhysicalMaterial({
     color: tireHex,
     map: rubberMap2,
     normalMap: rubberNormal2,
-    normalScale: new THREE.Vector2(1.2, 1.2),
-    roughness: 0.92,
-    metalness: 0.02,
+    normalScale: new THREE.Vector2(1.85, 1.85),
+    roughness: 0.76,
+    metalness: 0,
+    clearcoat: 0.08,
+    clearcoatRoughness: 0.62,
+    envMapIntensity: 0.8,
   });
-  disposables.push(rubberMap2 as unknown as THREE.Material, rubberNormal2 as unknown as THREE.Material);
-  const textMat = new THREE.MeshStandardMaterial({
+  disposables.push(rubberMap2, rubberNormal2);
+  const textMat = new THREE.MeshPhysicalMaterial({
     color: tireHex,
-    roughness: 0.82,
-    metalness: 0.04,
+    map: rubberMap2,
+    normalMap: rubberNormal2,
+    normalScale: new THREE.Vector2(1.45, 1.45),
+    roughness: 0.72,
+    metalness: 0,
+    clearcoat: 0.06,
+    clearcoatRoughness: 0.68,
+    envMapIntensity: 0.72,
     side: THREE.DoubleSide,
   });
   const rimMat = new THREE.MeshStandardMaterial({
@@ -252,42 +261,47 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
 
 
 
-  // Rubber carcass — a tube (outer cylinder + inner cylinder + end caps).
-  // We approximate with a lathe geometry: cross-section (radial vs axial).
+  // Rounded carcass: convex sidewalls flow into softened tread shoulders.
   const halfW = p.width / 2;
   const innerR = Math.max(p.rimRadius, 0.1);
   const outerR = p.radius;
   const bulge = 1 + p.inflate * 0.18;
   const points: THREE.Vector2[] = [];
-  // inner sidewall bottom -> outer bottom -> outer top -> inner top
-  const segs = 24;
-  // Bottom sidewall (from inner to outer along -halfW face, slight rounding)
-  for (let i = 0; i <= segs; i++) {
-    const t = i / segs;
-    const r = innerR + (outerR - innerR) * t;
-    const y = -halfW - 0.02 * Math.sin(t * Math.PI);
-    points.push(new THREE.Vector2(r, y));
+  const sidewallSegs = 30;
+  const beadRadius = innerR * 1.015;
+  const shoulderRadius = outerR * (1 + p.inflate * 0.055);
+  const crownRadius = outerR * bulge;
+  for (let i = 0; i <= sidewallSegs; i++) {
+    const t = i / sidewallSegs;
+    const eased = THREE.MathUtils.smoothstep(t, 0, 1);
+    const baseRadius = THREE.MathUtils.lerp(beadRadius, shoulderRadius, eased);
+    const convexity = Math.sin(Math.PI * t) * (outerR - innerR) * (0.045 + p.inflate * 0.035);
+    const y = -halfW - Math.sin(Math.PI * t) * p.width * (0.018 + p.inflate * 0.012);
+    points.push(new THREE.Vector2(baseRadius + convexity, y));
   }
-  // Outer tread from -halfW to +halfW along outer radius (with bulge)
-  const treadSegs = 24;
+  const treadSegs = 36;
   for (let i = 1; i <= treadSegs; i++) {
     const t = i / treadSegs;
     const y = -halfW + p.width * t;
-    const rr = outerR * (1 + p.inflate * 0.18 * Math.cos((y / halfW) * (Math.PI / 2)));
+    const centerWeight = Math.pow(
+      Math.max(0, Math.cos((y / Math.max(halfW, 0.001)) * Math.PI * 0.5)),
+      0.58,
+    );
+    const rr = shoulderRadius + (crownRadius - shoulderRadius) * centerWeight;
     points.push(new THREE.Vector2(rr, y));
   }
-  // Top sidewall outer -> inner
-  for (let i = 1; i <= segs; i++) {
-    const t = i / segs;
-    const r = outerR - (outerR - innerR) * t;
-    const y = halfW + 0.02 * Math.sin(t * Math.PI);
-    points.push(new THREE.Vector2(r, y));
+  for (let i = 1; i <= sidewallSegs; i++) {
+    const t = 1 - i / sidewallSegs;
+    const eased = THREE.MathUtils.smoothstep(t, 0, 1);
+    const baseRadius = THREE.MathUtils.lerp(beadRadius, shoulderRadius, eased);
+    const convexity = Math.sin(Math.PI * t) * (outerR - innerR) * (0.045 + p.inflate * 0.035);
+    const y = halfW + Math.sin(Math.PI * t) * p.width * (0.018 + p.inflate * 0.012);
+    points.push(new THREE.Vector2(baseRadius + convexity, y));
   }
-  // Inner face top -> bottom (close)
-  for (let i = 1; i <= 8; i++) {
-    const t = i / 8;
+  for (let i = 1; i <= 10; i++) {
+    const t = i / 10;
     const y = halfW - p.width * t;
-    points.push(new THREE.Vector2(innerR, y));
+    points.push(new THREE.Vector2(beadRadius, y));
   }
   const lathe = new THREE.LatheGeometry(points, 96);
   disposables.push(lathe);
@@ -297,7 +311,48 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   // Lathe rotates around Y axis; we want tire axis = X, so rotate the whole tire group
   group.add(rubberMesh);
 
-  // (side tread blocks intentionally omitted — full clean rubber face for text)
+  // Molded concentric sidewall ribs catch highlights near the bead and shoulder.
+  const ridgeMat = rubberMat.clone();
+  ridgeMat.roughness = 0.72;
+  ridgeMat.envMapIntensity = 0.92;
+  disposables.push(ridgeMat);
+  const ridgeSpecs = [
+    { radius: innerR + (outerR - innerR) * 0.11, tube: Math.max(0.009, outerR * 0.009) },
+    { radius: innerR + (outerR - innerR) * 0.18, tube: Math.max(0.007, outerR * 0.006) },
+    { radius: outerR * 0.93, tube: Math.max(0.011, outerR * 0.01) },
+    { radius: outerR * 0.965, tube: Math.max(0.008, outerR * 0.007) },
+  ];
+  for (const side of [-1, 1]) {
+    for (const spec of ridgeSpecs) {
+      const ridge = new THREE.TorusGeometry(spec.radius, spec.tube, 8, 96);
+      ridge.rotateX(Math.PI / 2);
+      disposables.push(ridge);
+      const mesh = new THREE.Mesh(ridge, ridgeMat);
+      mesh.position.y = side * (halfW + spec.tube * 0.3);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+  }
+
+  // Annular shoulder ribs soften the transition where tread wraps sideward.
+  for (const side of [-1, 1]) {
+    for (let band = 0; band < 3; band++) {
+      const shoulderBand = new THREE.TorusGeometry(
+        outerR * (0.982 + band * 0.012),
+        Math.max(0.012, outerR * (0.011 - band * 0.0015)),
+        8,
+        96,
+      );
+      shoulderBand.rotateX(Math.PI / 2);
+      disposables.push(shoulderBand);
+      const mesh = new THREE.Mesh(shoulderBand, ridgeMat);
+      mesh.position.y = side * (halfW - band * Math.max(0.025, p.width * 0.018));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+  }
 
   // Text rows — full tread width available.
   // Use cap-height (~0.7 * fontSize) as the effective row height so
