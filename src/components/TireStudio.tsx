@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { ChevronDown } from "lucide-react";
-import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib/tireFont";
+import { loadDefaultFont, loadFontFromArrayBuffer, measureTextWidth, type LoadedFont } from "@/lib/tireFont";
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
 import { CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
 
@@ -39,6 +39,8 @@ const DEFAULTS: TireParams = {
   textDirection: "vertical",
   tireColor: "#1a1a1a",
   rimStyle: "procedural",
+  autoWidth: true,
+  widthOffset: 0,
 };
 
 function TireMesh({
@@ -297,6 +299,20 @@ export default function TireStudio() {
 
   const set = <K extends keyof TireParams>(k: K, v: TireParams[K]) =>
     setParams((p) => ({ ...p, [k]: v }));
+
+  // When auto width is on, the tire grows/shrinks to fit the longest text
+  // line; widthOffset lets the user nudge it from there.
+  const effectiveParams = useMemo(() => {
+    if (!font || !params.autoWidth) return params;
+    const lines = params.text.split(/\r?\n/).slice(0, 2);
+    let longest = 0;
+    for (const line of lines) {
+      longest = Math.max(longest, measureTextWidth(font, line, params.fontSize, params.letterSpacing));
+    }
+    const base = Math.min(6, Math.max(0.6, longest + 0.3));
+    const width = Math.min(6, Math.max(0.4, base + params.widthOffset));
+    return { ...params, width };
+  }, [font, params]);
 
   const camDist = useMemo(
     () => params.radius * 3.6 + params.width * 0.6,
