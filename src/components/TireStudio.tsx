@@ -84,7 +84,7 @@ function StudioEnvironment({ intensity }: { intensity: number }) {
     const room = new RoomEnvironment();
     const target = generator.fromScene(room, 0.03);
     scene.environment = target.texture;
-    scene.environmentIntensity = Math.max(0.18, 0.82 / Math.max(0.65, intensity));
+    scene.environmentIntensity = Math.max(0.12, 0.45 / Math.max(0.65, intensity));
     return () => {
       if (scene.environment === target.texture) scene.environment = null;
       target.dispose();
@@ -154,20 +154,31 @@ function SceneWireup({
   return null;
 }
 
-function ResponsiveCamera({ distance }: { distance: number }) {
+function ResponsiveCamera({
+  distance,
+  radius,
+  width,
+}: {
+  distance: number;
+  radius: number;
+  width: number;
+}) {
   const { camera, size } = useThree();
 
   useEffect(() => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
-    const mobileScale = size.width < 768 ? 1.25 : 1;
-    camera.position.set(
-      distance * 0.7 * mobileScale,
-      distance * 0.3 * mobileScale,
-      distance * mobileScale,
-    );
+    // Fit the whole tyre (bounding sphere) inside the current aspect ratio so
+    // nothing is cropped in portrait windows, on desktop or mobile.
+    const boundR = Math.sqrt(radius * radius * 1.15 + (width / 2) ** 2) + 0.35;
+    const vFit = boundR / Math.tan((camera.fov * Math.PI) / 360);
+    const aspect = Math.max(0.4, size.width / Math.max(1, size.height));
+    const fit = Math.max(vFit, vFit / aspect);
+    const margin = size.width < 768 ? 1.12 : 1.06;
+    const d = Math.max(distance, fit * margin);
+    camera.position.set(d * 0.55, d * 0.28, d);
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
-  }, [camera, distance, size.width]);
+  }, [camera, distance, radius, width, size.width, size.height]);
 
   return null;
 }
@@ -308,7 +319,7 @@ export default function TireStudio() {
           camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
         >
         <SceneWireup rendererRef={rendererRef} />
-        <ResponsiveCamera distance={camDist} />
+        <ResponsiveCamera distance={camDist} radius={params.radius} width={params.width} />
         <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
         <StudioEnvironment intensity={lighting.intensity} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
@@ -316,7 +327,7 @@ export default function TireStudio() {
         {/* Top */}
         <directionalLight
           position={[0, 10, 2]}
-          intensity={2.2 * Math.pow(lighting.intensity, 1.8) * lighting.topIntensity}
+          intensity={1.5 * Math.pow(lighting.intensity, 1.8) * lighting.topIntensity}
           color={lighting.topColor}
           castShadow
           shadow-mapSize-width={1024}
