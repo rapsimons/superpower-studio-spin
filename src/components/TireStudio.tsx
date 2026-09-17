@@ -315,8 +315,8 @@ export default function TireStudio() {
   }, [font, params]);
 
   const camDist = useMemo(
-    () => params.radius * 3.6 + params.width * 0.6,
-    [params.radius, params.width],
+    () => effectiveParams.radius * 3.6 + effectiveParams.width * 0.6,
+    [effectiveParams.radius, effectiveParams.width],
   );
 
   return (
@@ -335,7 +335,7 @@ export default function TireStudio() {
           camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
         >
         <SceneWireup rendererRef={rendererRef} />
-        <ResponsiveCamera distance={camDist} radius={params.radius} width={params.width} />
+        <ResponsiveCamera distance={camDist} radius={effectiveParams.radius} width={effectiveParams.width} />
         <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
         <StudioEnvironment intensity={lighting.intensity} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
@@ -366,7 +366,7 @@ export default function TireStudio() {
           {font && (
             <TireMesh
               font={font}
-              params={{ ...params, tireColor: scaleHex(params.tireColor, tireIntensity) }}
+              params={{ ...effectiveParams, tireColor: scaleHex(params.tireColor, tireIntensity) }}
               onReady={captureGroup}
             />
           )}
@@ -374,8 +374,8 @@ export default function TireStudio() {
             const rim = findRim(params.rimStyle);
             if (!rim) return null;
             // Match both outer tire faces regardless of the model's original proportions.
-            const targetDiameter = (params.rimRadius + 0.02) * 2.05;
-            const targetWidth = params.width + 0.04;
+            const targetDiameter = (effectiveParams.rimRadius + 0.02) * 2.05;
+            const targetWidth = effectiveParams.width + 0.04;
             return (
               <CustomRim
                 key={rim.id}
