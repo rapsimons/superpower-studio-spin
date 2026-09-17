@@ -54,6 +54,10 @@ export type TireParams = {
   // means an external GLB model is rendered separately, so the procedural
   // rim + lug nuts are skipped here.
   rimStyle: string;
+  // Auto width: size the tire to the longest text line; widthOffset is the
+  // user's micro adjustment on top of (or instead of, in manual mode) it.
+  autoWidth: boolean;
+  widthOffset: number;
 };
 
 export type BuiltTire = {
