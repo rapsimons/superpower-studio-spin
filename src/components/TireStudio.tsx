@@ -336,13 +336,13 @@ export default function TireStudio() {
         {/* Front */}
         <directionalLight
           position={[4, 2, 8]}
-          intensity={1.4 * Math.pow(lighting.intensity, 1.8) * lighting.frontIntensity}
+          intensity={1.0 * Math.pow(lighting.intensity, 1.8) * lighting.frontIntensity}
           color={lighting.frontColor}
         />
         {/* Bottom */}
         <directionalLight
           position={[-3, -6, -4]}
-          intensity={0.8 * Math.pow(lighting.intensity, 1.8) * lighting.bottomIntensity}
+          intensity={0.6 * Math.pow(lighting.intensity, 1.8) * lighting.bottomIntensity}
           color={lighting.bottomColor}
         />
 
