@@ -72,6 +72,26 @@ export type GlyphInfo = {
 
 const glyphCache = new WeakMap<opentype.Font, Map<string, GlyphInfo>>();
 
+// Measure the laid-out width of one text line, mirroring the cursor logic in
+// the geometry builder (advance widths scaled to targetHeight + letterSpacing).
+export function measureTextWidth(
+  font: LoadedFont,
+  text: string,
+  targetHeight: number,
+  letterSpacing: number,
+): number {
+  const scale = targetHeight / font.unitsPerEm;
+  let cursor = 0;
+  for (const ch of Array.from(text)) {
+    if (ch === " ") {
+      cursor += font.unitsPerEm * 0.35 * scale + letterSpacing;
+      continue;
+    }
+    cursor += getGlyphInfo(font.font, ch).advanceWidth * scale + letterSpacing;
+  }
+  return cursor;
+}
+
 export function getGlyphInfo(font: opentype.Font, ch: string): GlyphInfo {
   let m = glyphCache.get(font);
   if (!m) {

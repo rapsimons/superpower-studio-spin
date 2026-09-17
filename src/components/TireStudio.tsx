@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { ChevronDown } from "lucide-react";
-import { loadDefaultFont, loadFontFromArrayBuffer, type LoadedFont } from "@/lib/tireFont";
+import { loadDefaultFont, loadFontFromArrayBuffer, measureTextWidth, type LoadedFont } from "@/lib/tireFont";
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
 import { CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
 
@@ -39,6 +39,8 @@ const DEFAULTS: TireParams = {
   textDirection: "vertical",
   tireColor: "#1a1a1a",
   rimStyle: "procedural",
+  autoWidth: true,
+  widthOffset: 0,
 };
 
 function TireMesh({
@@ -298,9 +300,23 @@ export default function TireStudio() {
   const set = <K extends keyof TireParams>(k: K, v: TireParams[K]) =>
     setParams((p) => ({ ...p, [k]: v }));
 
+  // When auto width is on, the tire grows/shrinks to fit the longest text
+  // line; widthOffset lets the user nudge it from there.
+  const effectiveParams = useMemo(() => {
+    if (!font || !params.autoWidth) return params;
+    const lines = params.text.split(/\r?\n/).slice(0, 2);
+    let longest = 0;
+    for (const line of lines) {
+      longest = Math.max(longest, measureTextWidth(font, line, params.fontSize, params.letterSpacing));
+    }
+    const base = Math.min(6, Math.max(0.6, longest + 0.3));
+    const width = Math.min(6, Math.max(0.4, base + params.widthOffset));
+    return { ...params, width };
+  }, [font, params]);
+
   const camDist = useMemo(
-    () => params.radius * 3.6 + params.width * 0.6,
-    [params.radius, params.width],
+    () => effectiveParams.radius * 3.6 + effectiveParams.width * 0.6,
+    [effectiveParams.radius, effectiveParams.width],
   );
 
   return (
@@ -319,7 +335,7 @@ export default function TireStudio() {
           camera={{ position: [camDist * 0.7, camDist * 0.3, camDist], fov: 32 }}
         >
         <SceneWireup rendererRef={rendererRef} />
-        <ResponsiveCamera distance={camDist} radius={params.radius} width={params.width} />
+        <ResponsiveCamera distance={camDist} radius={effectiveParams.radius} width={effectiveParams.width} />
         <CanvasBackground transparent={transparentBg} color={scaleHex(bgColor, bgIntensity)} />
         <StudioEnvironment intensity={lighting.intensity} />
         {/* Ambient stays tiny so shadows go deep black as intensity climbs. */}
@@ -350,7 +366,7 @@ export default function TireStudio() {
           {font && (
             <TireMesh
               font={font}
-              params={{ ...params, tireColor: scaleHex(params.tireColor, tireIntensity) }}
+              params={{ ...effectiveParams, tireColor: scaleHex(params.tireColor, tireIntensity) }}
               onReady={captureGroup}
             />
           )}
@@ -358,8 +374,8 @@ export default function TireStudio() {
             const rim = findRim(params.rimStyle);
             if (!rim) return null;
             // Match both outer tire faces regardless of the model's original proportions.
-            const targetDiameter = (params.rimRadius + 0.02) * 2.05;
-            const targetWidth = params.width + 0.04;
+            const targetDiameter = (effectiveParams.rimRadius + 0.02) * 2.05;
+            const targetWidth = effectiveParams.width + 0.04;
             return (
               <CustomRim
                 key={rim.id}
@@ -536,7 +552,32 @@ export default function TireStudio() {
             mobileActive={activeMobileSection === "tire"}
           >
             <Slider label="Diameter" min={0.8} max={3.0} step={0.05} value={params.radius} onChange={(v) => set("radius", v)} />
-            <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
+                Width mode
+              </p>
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+                {([["auto", "Auto fit text"], ["manual", "Manual"]] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => set("autoWidth", mode === "auto")}
+                    className={`rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      (params.autoWidth ? "auto" : "manual") === mode
+                        ? "bg-yellow-400/20 text-yellow-100 ring-1 ring-yellow-400/60"
+                        : "text-neutral-400 hover:bg-white/5"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {params.autoWidth ? (
+              <Slider label="Width adjust" min={-1.5} max={1.5} step={0.02} value={params.widthOffset} onChange={(v) => set("widthOffset", v)} format={(v) => (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2))} />
+            ) : (
+              <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
+            )}
             <Slider label="Inflate / fatness" min={0} max={1.5} step={0.05} value={params.inflate} onChange={(v) => set("inflate", v)} />
             <Slider label="Sidewall thickness" min={0.05} max={1.0} step={0.02} value={params.sidewallThickness} onChange={(v) => set("sidewallThickness", v)} />
             <ColorRow
