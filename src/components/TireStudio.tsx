@@ -552,7 +552,32 @@ export default function TireStudio() {
             mobileActive={activeMobileSection === "tire"}
           >
             <Slider label="Diameter" min={0.8} max={3.0} step={0.05} value={params.radius} onChange={(v) => set("radius", v)} />
-            <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-neutral-400">
+                Width mode
+              </p>
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+                {([["auto", "Auto fit text"], ["manual", "Manual"]] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => set("autoWidth", mode === "auto")}
+                    className={`rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      (params.autoWidth ? "auto" : "manual") === mode
+                        ? "bg-yellow-400/20 text-yellow-100 ring-1 ring-yellow-400/60"
+                        : "text-neutral-400 hover:bg-white/5"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {params.autoWidth ? (
+              <Slider label="Width adjust" min={-1.5} max={1.5} step={0.02} value={params.widthOffset} onChange={(v) => set("widthOffset", v)} format={(v) => (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2))} />
+            ) : (
+              <Slider label="Width (length)" min={0.6} max={5.0} step={0.05} value={params.width} onChange={(v) => set("width", v)} />
+            )}
             <Slider label="Inflate / fatness" min={0} max={1.5} step={0.05} value={params.inflate} onChange={(v) => set("inflate", v)} />
             <Slider label="Sidewall thickness" min={0.05} max={1.0} step={0.02} value={params.sidewallThickness} onChange={(v) => set("sidewallThickness", v)} />
             <ColorRow
