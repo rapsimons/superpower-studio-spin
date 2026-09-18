@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState, useCallback, Suspense } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Download, Lock, Pause, Play, Rotate3D, Unlock } from "lucide-react";
 import { loadDefaultFont, loadFontFromArrayBuffer, measureTextWidth, type LoadedFont } from "@/lib/tireFont";
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
 import { CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
 
-type EditorSection = "text" | "tread" | "tire" | "rim" | "lighting" | "export";
+type EditorSection = "text" | "tread" | "tire" | "rim" | "lighting" | "spin";
 
 const EDITOR_TABS: { id: EditorSection; label: string }[] = [
   { id: "text", label: "Text" },
@@ -17,8 +17,38 @@ const EDITOR_TABS: { id: EditorSection; label: string }[] = [
   { id: "tire", label: "Tire" },
   { id: "rim", label: "Rim" },
   { id: "lighting", label: "Lighting" },
-  { id: "export", label: "Export" },
+  { id: "spin", label: "Spin" },
 ];
+
+type SpinMode = "x" | "y" | "both";
+
+type SpinSettings = {
+  swipeSpeed: number;
+  horizontalRotation: number;
+  verticalRotation: number;
+  xSpeed: number;
+  ySpeed: number;
+  mode: SpinMode;
+  playing: boolean;
+  locks: Record<"swipeSpeed" | "horizontalRotation" | "verticalRotation" | "xSpeed" | "ySpeed", boolean>;
+};
+
+const DEFAULT_SPIN: SpinSettings = {
+  swipeSpeed: 1,
+  horizontalRotation: 0,
+  verticalRotation: 0,
+  xSpeed: 0.35,
+  ySpeed: 0.2,
+  mode: "x",
+  playing: false,
+  locks: {
+    swipeSpeed: false,
+    horizontalRotation: false,
+    verticalRotation: false,
+    xSpeed: false,
+    ySpeed: false,
+  },
+};
 
 const DEFAULTS: TireParams = {
   text: "SUPERPOWER",
@@ -68,6 +98,44 @@ function TireMesh({
   useEffect(() => () => built?.dispose(), []); // final cleanup
   if (!built) return null;
   return <primitive object={built.group} />;
+}
+
+function TireRig({
+  spin,
+  onReady,
+  children,
+}: {
+  spin: SpinSettings;
+  onReady: (group: THREE.Group) => void;
+  children: React.ReactNode;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useEffect(() => {
+    const group = groupRef.current;
+    if (group) onReady(group);
+  }, [onReady]);
+
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    group.rotation.x = THREE.MathUtils.degToRad(spin.verticalRotation);
+    group.rotation.y = THREE.MathUtils.degToRad(spin.horizontalRotation);
+  }, [spin.horizontalRotation, spin.verticalRotation]);
+
+  useFrame((_, rawDelta) => {
+    const group = groupRef.current;
+    if (!group || !spin.playing) return;
+    const delta = Math.min(rawDelta, 0.05);
+    if ((spin.mode === "x" || spin.mode === "both") && !spin.locks.xSpeed) {
+      group.rotation.x += spin.xSpeed * delta;
+    }
+    if ((spin.mode === "y" || spin.mode === "both") && !spin.locks.ySpeed) {
+      group.rotation.y += spin.ySpeed * delta;
+    }
+  });
+
+  return <group ref={groupRef}>{children}</group>;
 }
 
 function CanvasBackground({ transparent, color }: { transparent: boolean; color: string }) {
@@ -221,6 +289,36 @@ function Slider({
   );
 }
 
+function LockableSlider({
+  locked,
+  onToggleLock,
+  ...sliderProps
+}: React.ComponentProps<typeof Slider> & {
+  locked: boolean;
+  onToggleLock: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_32px] items-end gap-2">
+      <div className={locked ? "opacity-50" : ""}>
+        <Slider {...sliderProps} />
+      </div>
+      <button
+        type="button"
+        onClick={onToggleLock}
+        aria-label={`${locked ? "Unlock" : "Lock"} ${sliderProps.label}`}
+        title={`${locked ? "Unlock" : "Lock"} ${sliderProps.label}`}
+        className={`mb-0.5 grid h-8 w-8 place-items-center rounded-full border transition-colors ${
+          locked
+            ? "border-yellow-400/60 bg-yellow-400/20 text-yellow-200"
+            : "border-white/10 bg-black/20 text-neutral-500 hover:text-neutral-200"
+        }`}
+      >
+        {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+}
+
 type Lighting = {
   topColor: string;
   frontColor: string;
@@ -261,7 +359,9 @@ export default function TireStudio() {
   const [fontError, setFontError] = useState<string | null>(null);
   const [params, setParams] = useState<TireParams>(DEFAULTS);
   const [transparentBg, setTransparentBg] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState<EditorSection>("text");
+  const [spin, setSpin] = useState<SpinSettings>(DEFAULT_SPIN);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [bgColor, setBgColor] = useState<string>(DEFAULT_BG);
   const [bgIntensity, setBgIntensity] = useState<number>(1);
@@ -274,12 +374,13 @@ export default function TireStudio() {
     rim: false,
     tread: true,
     lighting: false,
-    export: false,
+    spin: false,
   });
   const toggle = (k: string) => setOpenSections((s) => ({ ...s, [k]: !s[k] }));
 
 
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const dragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const { captureGroup, exportGLB, exportPNG } = useExport(rendererRef);
 
   useEffect(() => {
@@ -319,9 +420,58 @@ export default function TireStudio() {
     [effectiveParams.radius, effectiveParams.width],
   );
 
+  const setSpinValue = <K extends keyof Omit<SpinSettings, "locks">>(
+    key: K,
+    value: SpinSettings[K],
+  ) => setSpin((current) => ({ ...current, [key]: value }));
+
+  const toggleSpinLock = (key: keyof SpinSettings["locks"]) =>
+    setSpin((current) => ({
+      ...current,
+      locks: { ...current.locks, [key]: !current.locks[key] },
+    }));
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+    setSpin((current) => ({
+      ...current,
+      horizontalRotation: current.locks.horizontalRotation
+        ? current.horizontalRotation
+        : current.horizontalRotation + dx * 0.45 * current.swipeSpeed,
+      verticalRotation: current.locks.verticalRotation
+        ? current.verticalRotation
+        : current.verticalRotation + dy * 0.45 * current.swipeSpeed,
+    }));
+  };
+
+  const endPointerDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   return (
     <div className="relative min-h-[100dvh] w-full overflow-x-hidden bg-neutral-950 text-neutral-300 md:h-[100dvh] md:overflow-hidden">
-      <div className="relative h-[52dvh] min-h-[340px] max-h-[460px] w-full md:absolute md:inset-0 md:h-full md:max-h-none">
+      <div
+        className="relative h-[52dvh] min-h-[340px] max-h-[460px] w-full touch-none md:absolute md:inset-0 md:h-full md:max-h-none"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPointerDrag}
+        onPointerCancel={endPointerDrag}
+      >
         <Canvas
           shadows
           dpr={[1, 2]}
@@ -362,35 +512,36 @@ export default function TireStudio() {
           color={lighting.bottomColor}
         />
 
-        <Suspense fallback={null}>
-          {font && (
-            <TireMesh
-              font={font}
-              params={{ ...effectiveParams, tireColor: scaleHex(params.tireColor, tireIntensity) }}
-              onReady={captureGroup}
-            />
-          )}
-          {params.rimStyle !== "procedural" && (() => {
-            const rim = findRim(params.rimStyle);
-            if (!rim) return null;
-            // Match both outer tire faces regardless of the model's original proportions.
-            const targetDiameter = (effectiveParams.rimRadius + 0.02) * 2.05;
-            const targetWidth = effectiveParams.width + 0.04;
-            return (
-              <CustomRim
-                key={rim.id}
-                url={rim.url}
-                fitScale={rim.fitScale}
-                targetDiameter={targetDiameter}
-                targetWidth={targetWidth}
-                metalColor={scaleHex(rimColor, rimIntensity)}
+        <TireRig spin={spin} onReady={captureGroup}>
+          <Suspense fallback={null}>
+            {font && (
+              <TireMesh
+                font={font}
+                params={{ ...effectiveParams, tireColor: scaleHex(params.tireColor, tireIntensity) }}
               />
-            );
-          })()}
-        </Suspense>
+            )}
+            {params.rimStyle !== "procedural" && (() => {
+              const rim = findRim(params.rimStyle);
+              if (!rim) return null;
+              // Match both outer tire faces regardless of the model's original proportions.
+              const targetDiameter = (effectiveParams.rimRadius + 0.02) * 2.05;
+              const targetWidth = effectiveParams.width + 0.04;
+              return (
+                <CustomRim
+                  key={rim.id}
+                  url={rim.url}
+                  fitScale={rim.fitScale}
+                  targetDiameter={targetDiameter}
+                  targetWidth={targetWidth}
+                  metalColor={scaleHex(rimColor, rimIntensity)}
+                />
+              );
+            })()}
+          </Suspense>
+        </TireRig>
 
 
-          <OrbitControls enablePan={false} minDistance={2} maxDistance={40} />
+          <OrbitControls enablePan={false} enableRotate={false} minDistance={2} maxDistance={40} />
         </Canvas>
 
       {/* Grain overlay */}
@@ -415,19 +566,41 @@ export default function TireStudio() {
             <span className="text-yellow-300/80 md:hidden">Superpower </span>Tire Studio
           </h1>
         </div>
-          <div className="pointer-events-auto hidden shrink-0 gap-2 md:flex">
-          <button
-            onClick={() => exportPNG(transparentBg)}
-            className="rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 backdrop-blur-xl hover:bg-white/10"
-          >
-            PNG
-          </button>
-          <button
-            onClick={() => exportGLB()}
-            className="rounded-xl border border-yellow-400/60 bg-yellow-400/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-yellow-100 backdrop-blur-xl hover:bg-yellow-400/30"
-          >
-            GLB
-          </button>
+          <div className="pointer-events-auto relative shrink-0">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setExportOpen((open) => !open);
+              }}
+              aria-label="Open export menu"
+              title="Export"
+              aria-expanded={exportOpen}
+              className="grid h-11 w-11 place-items-center rounded-full border border-yellow-400/50 bg-black/45 text-yellow-200 shadow-lg backdrop-blur-xl transition-colors hover:bg-yellow-400/20"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+            {exportOpen && (
+              <div
+                className="absolute right-0 top-13 w-52 rounded-lg border border-white/10 bg-black/75 p-3 shadow-2xl backdrop-blur-2xl animate-scale-in"
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <label className="mb-3 flex items-center gap-2 text-[11px] text-neutral-300">
+                  <input
+                    type="checkbox"
+                    checked={transparentBg}
+                    onChange={(event) => setTransparentBg(event.target.checked)}
+                    className="accent-yellow-400"
+                  />
+                  Transparent PNG
+                </label>
+                <div className="grid gap-2">
+                  <button type="button" onClick={() => exportPNG(transparentBg)} className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-200 hover:bg-white/10">Download PNG</button>
+                  <button type="button" onClick={() => exportGLB()} className="rounded-md border border-yellow-400/50 bg-yellow-400/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-yellow-100 hover:bg-yellow-400/25">Download GLB</button>
+                  <button type="button" onClick={() => { setParams(DEFAULTS); setSpin(DEFAULT_SPIN); }} className="rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-400 hover:bg-white/5">Reset</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -690,44 +863,46 @@ export default function TireStudio() {
 
 
           <CollapsibleSection
-            title="Export"
-            open={openSections.export}
-            onToggle={() => toggle("export")}
-            mobileActive={activeMobileSection === "export"}
+            title="Spin"
+            open={openSections.spin}
+            onToggle={() => toggle("spin")}
+            mobileActive={activeMobileSection === "spin"}
           >
-            <label className="flex items-center gap-2 text-[11px] text-neutral-300">
-              <input
-                type="checkbox"
-                checked={transparentBg}
-                onChange={(e) => setTransparentBg(e.target.checked)}
-                className="accent-yellow-400"
-              />
-              Transparent background (PNG)
-            </label>
-            <div className="flex flex-col gap-2 pt-1">
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+                {(["x", "y", "both"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSpinValue("mode", mode)}
+                    className={`rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${spin.mode === mode ? "bg-yellow-400/20 text-yellow-100 ring-1 ring-yellow-400/60" : "text-neutral-400 hover:bg-white/5"}`}
+                  >
+                    {mode === "x" ? "X spin" : mode === "y" ? "Y turn" : "Both"}
+                  </button>
+                ))}
+              </div>
               <button
-                onClick={() => exportPNG(transparentBg)}
-                className="rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-300 hover:bg-white/10"
+                type="button"
+                onClick={() => setSpinValue("playing", !spin.playing)}
+                aria-label={spin.playing ? "Pause automatic spin" : "Start automatic spin"}
+                title={spin.playing ? "Pause" : "Play"}
+                className={`grid h-9 w-9 place-items-center rounded-full border transition-colors ${spin.playing ? "border-yellow-400/60 bg-yellow-400 text-neutral-950" : "border-white/10 bg-black/20 text-neutral-300 hover:bg-white/10"}`}
               >
-                Download PNG
-              </button>
-              <button
-                onClick={() => exportGLB()}
-                className="rounded-lg border border-yellow-400/60 bg-yellow-400/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-yellow-100 hover:bg-yellow-400/30"
-              >
-                Download GLB (3D)
-              </button>
-              <button
-                onClick={() => setParams(DEFAULTS)}
-                className="rounded-lg border border-white/5 px-3 py-2 text-[11px] uppercase tracking-wider text-neutral-500 hover:bg-white/5"
-              >
-                Reset
+                {spin.playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </button>
             </div>
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-neutral-500">
+              <Rotate3D className="h-3.5 w-3.5 text-yellow-300/70" /> Swipe the tyre up, down, left or right
+            </div>
+            <LockableSlider label="Swipe speed" min={0.1} max={3} step={0.05} value={spin.swipeSpeed} onChange={(value) => setSpinValue("swipeSpeed", value)} locked={spin.locks.swipeSpeed} onToggleLock={() => toggleSpinLock("swipeSpeed")} />
+            <LockableSlider label="Rotation horizontal" min={-180} max={180} step={1} value={spin.horizontalRotation} onChange={(value) => setSpinValue("horizontalRotation", value)} format={(value) => `${value.toFixed(0)}°`} locked={spin.locks.horizontalRotation} onToggleLock={() => toggleSpinLock("horizontalRotation")} />
+            <LockableSlider label="Rotation vertical" min={-180} max={180} step={1} value={spin.verticalRotation} onChange={(value) => setSpinValue("verticalRotation", value)} format={(value) => `${value.toFixed(0)}°`} locked={spin.locks.verticalRotation} onToggleLock={() => toggleSpinLock("verticalRotation")} />
+            <LockableSlider label="X-axis spin speed" min={-2} max={2} step={0.05} value={spin.xSpeed} onChange={(value) => setSpinValue("xSpeed", value)} locked={spin.locks.xSpeed} onToggleLock={() => toggleSpinLock("xSpeed")} />
+            <LockableSlider label="Y-axis spin speed" min={-2} max={2} step={0.05} value={spin.ySpeed} onChange={(value) => setSpinValue("ySpeed", value)} locked={spin.locks.ySpeed} onToggleLock={() => toggleSpinLock("ySpeed")} />
           </CollapsibleSection>
 
           <p className="mt-2 text-[10px] leading-relaxed text-neutral-500">
-            Drag to orbit. Scroll to zoom. Add this app to your home screen to use it offline.
+            Swipe the tyre to rotate. Scroll or pinch to zoom. Add this app to your home screen to use it offline.
           </p>
         </div>
       </div>
