@@ -127,10 +127,18 @@ function TireRig({
     const group = groupRef.current;
     if (!group || !spin.playing) return;
     const delta = Math.min(rawDelta, 0.05);
-    if ((spin.mode === "x" || spin.mode === "both") && !spin.locks.xSpeed) {
+    if (
+      (spin.mode === "x" || spin.mode === "both") &&
+      !spin.locks.xSpeed &&
+      !spin.locks.verticalRotation
+    ) {
       group.rotation.x += spin.xSpeed * delta;
     }
-    if ((spin.mode === "y" || spin.mode === "both") && !spin.locks.ySpeed) {
+    if (
+      (spin.mode === "y" || spin.mode === "both") &&
+      !spin.locks.ySpeed &&
+      !spin.locks.horizontalRotation
+    ) {
       group.rotation.y += spin.ySpeed * delta;
     }
   });
@@ -261,6 +269,7 @@ function Slider({
   step,
   onChange,
   format,
+  disabled = false,
 }: {
   label: string;
   value: number;
@@ -269,6 +278,7 @@ function Slider({
   step: number;
   onChange: (v: number) => void;
   format?: (v: number) => string;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -283,7 +293,8 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full accent-yellow-400"
+        disabled={disabled}
+        className="w-full accent-yellow-400 disabled:cursor-not-allowed"
       />
     </label>
   );
@@ -300,7 +311,7 @@ function LockableSlider({
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_32px] items-end gap-2">
       <div className={locked ? "opacity-50" : ""}>
-        <Slider {...sliderProps} />
+        <Slider {...sliderProps} disabled={locked} />
       </div>
       <button
         type="button"
@@ -446,10 +457,10 @@ export default function TireStudio() {
     drag.y = event.clientY;
     setSpin((current) => ({
       ...current,
-      horizontalRotation: current.locks.horizontalRotation
+      horizontalRotation: current.locks.horizontalRotation || current.locks.swipeSpeed
         ? current.horizontalRotation
         : current.horizontalRotation + dx * 0.45 * current.swipeSpeed,
-      verticalRotation: current.locks.verticalRotation
+      verticalRotation: current.locks.verticalRotation || current.locks.swipeSpeed
         ? current.verticalRotation
         : current.verticalRotation + dy * 0.45 * current.swipeSpeed,
     }));
@@ -573,6 +584,7 @@ export default function TireStudio() {
                 event.stopPropagation();
                 setExportOpen((open) => !open);
               }}
+              onPointerDown={(event) => event.stopPropagation()}
               aria-label="Open export menu"
               title="Export"
               aria-expanded={exportOpen}
@@ -582,7 +594,7 @@ export default function TireStudio() {
             </button>
             {exportOpen && (
               <div
-                className="absolute right-0 top-13 w-52 rounded-lg border border-white/10 bg-black/75 p-3 shadow-2xl backdrop-blur-2xl animate-scale-in"
+                className="absolute right-0 top-12 w-52 rounded-lg border border-white/10 bg-black/75 p-3 shadow-2xl backdrop-blur-2xl animate-scale-in"
                 onPointerDown={(event) => event.stopPropagation()}
               >
                 <label className="mb-3 flex items-center gap-2 text-[11px] text-neutral-300">
