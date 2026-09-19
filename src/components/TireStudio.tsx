@@ -428,7 +428,7 @@ export default function TireStudio() {
         }
         return next;
       });
-      set("rimStyle", "custom-rim");
+      setParams((current) => ({ ...current, rimStyle: "custom-rim" }));
     } else {
       setImportedTire((current) => {
         if (current) {
@@ -437,7 +437,7 @@ export default function TireStudio() {
         }
         return next;
       });
-      set("hideTireBody", true);
+      setParams((current) => ({ ...current, hideTireBody: true }));
     }
   }, []);
 
@@ -446,11 +446,14 @@ export default function TireStudio() {
       clearCustomModel(importedRim.url);
       URL.revokeObjectURL(importedRim.url);
     }
+  }, [importedRim]);
+
+  useEffect(() => () => {
     if (importedTire) {
       clearCustomModel(importedTire.url);
       URL.revokeObjectURL(importedTire.url);
     }
-  }, [importedRim, importedTire]);
+  }, [importedTire]);
 
   const set = <K extends keyof TireParams>(k: K, v: TireParams[K]) =>
     setParams((p) => ({ ...p, [k]: v }));
@@ -664,7 +667,14 @@ export default function TireStudio() {
                 <div className="grid gap-2">
                   <button type="button" onClick={() => exportPNG(transparentBg)} className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-200 hover:bg-white/10">Download PNG</button>
                   <button type="button" onClick={() => exportGLB()} className="rounded-md border border-yellow-400/50 bg-yellow-400/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-yellow-100 hover:bg-yellow-400/25">Download GLB</button>
-                  <button type="button" onClick={() => { setParams(DEFAULTS); setSpin(DEFAULT_SPIN); }} className="rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-400 hover:bg-white/5">Reset</button>
+                  <button type="button" onClick={() => {
+                    if (importedRim) { clearCustomModel(importedRim.url); URL.revokeObjectURL(importedRim.url); }
+                    if (importedTire) { clearCustomModel(importedTire.url); URL.revokeObjectURL(importedTire.url); }
+                    setImportedRim(null);
+                    setImportedTire(null);
+                    setParams(DEFAULTS);
+                    setSpin(DEFAULT_SPIN);
+                  }} className="rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-400 hover:bg-white/5">Reset</button>
                 </div>
               </div>
             )}
