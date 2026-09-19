@@ -42,6 +42,7 @@ type Props = {
   metalColor: string;
   metalness?: number;
   roughness?: number;
+  materialMode?: "metal" | "rubber" | "original";
 };
 
 export function CustomRim({
@@ -52,6 +53,7 @@ export function CustomRim({
   metalColor,
   metalness = 1.0,
   roughness = 0.2,
+  materialMode = "metal",
 }: Props) {
   const gltf = useGLTF(
     url,
@@ -106,38 +108,45 @@ export function CustomRim({
     // Match tire group orientation (tire group has rotation.z = PI/2)
     outer.rotation.z = Math.PI / 2;
 
-    // Metallic override so every model looks like a real rim, not textured
-    const metalMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(metalColor),
-      metalness,
-      roughness,
-      envMapIntensity: 1.6,
-      side: THREE.DoubleSide,
-    });
+    const overrideMaterial = materialMode === "original"
+      ? null
+      : new THREE.MeshStandardMaterial({
+          color: new THREE.Color(metalColor),
+          metalness: materialMode === "rubber" ? 0 : metalness,
+          roughness: materialMode === "rubber" ? 0.76 : roughness,
+          envMapIntensity: materialMode === "rubber" ? 0.8 : 1.6,
+          side: THREE.DoubleSide,
+        });
     outer.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if ((mesh as unknown as { isMesh?: boolean }).isMesh) {
-        mesh.material = metalMat;
+        if (overrideMaterial) mesh.material = overrideMaterial;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
       }
     });
 
     return outer;
-  }, [gltf, targetDiameter, targetWidth, fitScale, metalColor, metalness, roughness]);
+  }, [gltf, targetDiameter, targetWidth, fitScale, metalColor, metalness, roughness, materialMode]);
 
   useEffect(() => {
     return () => {
       object.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if ((mesh as unknown as { isMesh?: boolean }).isMesh) {
-          const m = mesh.material as THREE.Material | THREE.Material[];
-          if (Array.isArray(m)) m.forEach((mm) => mm.dispose());
-          else m.dispose();
+          if (materialMode !== "original") {
+            const m = mesh.material as THREE.Material | THREE.Material[];
+            if (Array.isArray(m)) m.forEach((mm) => mm.dispose());
+            else m.dispose();
+          }
         }
       });
     };
-  }, [object]);
+  }, [object, materialMode]);
 
   return <primitive object={object} />;
+}
+
+export function clearCustomModel(url: string) {
+  useGLTF.clear(url);
 }
