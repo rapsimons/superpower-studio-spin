@@ -4,10 +4,10 @@ import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
-import { ChevronDown, Download, Lock, Pause, Play, Rotate3D, Unlock } from "lucide-react";
+import { ChevronDown, Download, Lock, Pause, Play, Rotate3D, Trash2, Unlock, Upload } from "lucide-react";
 import { loadDefaultFont, loadFontFromArrayBuffer, measureTextWidth, type LoadedFont } from "@/lib/tireFont";
 import { buildTire, type TireParams } from "@/lib/tireGeometry";
-import { CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
+import { clearCustomModel, CustomRim, RIM_LIBRARY, findRim } from "@/components/CustomRim";
 
 type EditorSection = "text" | "tread" | "tire" | "rim" | "lighting" | "spin";
 
@@ -68,9 +68,15 @@ const DEFAULTS: TireParams = {
   rowCount: 0,
   textDirection: "vertical",
   tireColor: "#1a1a1a",
-  rimStyle: "procedural",
+  rimStyle: "gt2",
   autoWidth: true,
   widthOffset: 0,
+  hideTireBody: false,
+};
+
+type ImportedModel = {
+  name: string;
+  url: string;
 };
 
 function TireMesh({
@@ -379,6 +385,8 @@ export default function TireStudio() {
   const [rimColor, setRimColor] = useState<string>("#dcdce2");
   const [rimIntensity, setRimIntensity] = useState<number>(1);
   const [tireIntensity, setTireIntensity] = useState<number>(1);
+  const [importedRim, setImportedRim] = useState<ImportedModel | null>(null);
+  const [importedTire, setImportedTire] = useState<ImportedModel | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     text: true,
     tire: true,
@@ -408,6 +416,44 @@ export default function TireStudio() {
       setFontError(`Could not load font: ${String(e)}`);
     }
   }, []);
+
+  const importModel = useCallback((file: File, kind: "rim" | "tire") => {
+    if (!file.name.toLowerCase().endsWith(".glb")) return;
+    const next = { name: file.name, url: URL.createObjectURL(file) };
+    if (kind === "rim") {
+      setImportedRim((current) => {
+        if (current) {
+          clearCustomModel(current.url);
+          URL.revokeObjectURL(current.url);
+        }
+        return next;
+      });
+      setParams((current) => ({ ...current, rimStyle: "custom-rim" }));
+    } else {
+      setImportedTire((current) => {
+        if (current) {
+          clearCustomModel(current.url);
+          URL.revokeObjectURL(current.url);
+        }
+        return next;
+      });
+      setParams((current) => ({ ...current, hideTireBody: true }));
+    }
+  }, []);
+
+  useEffect(() => () => {
+    if (importedRim) {
+      clearCustomModel(importedRim.url);
+      URL.revokeObjectURL(importedRim.url);
+    }
+  }, [importedRim]);
+
+  useEffect(() => () => {
+    if (importedTire) {
+      clearCustomModel(importedTire.url);
+      URL.revokeObjectURL(importedTire.url);
+    }
+  }, [importedTire]);
 
   const set = <K extends keyof TireParams>(k: K, v: TireParams[K]) =>
     setParams((p) => ({ ...p, [k]: v }));
@@ -531,8 +577,10 @@ export default function TireStudio() {
                 params={{ ...effectiveParams, tireColor: scaleHex(params.tireColor, tireIntensity) }}
               />
             )}
-            {params.rimStyle !== "procedural" && (() => {
-              const rim = findRim(params.rimStyle);
+            {(() => {
+              const rim = params.rimStyle === "custom-rim" && importedRim
+                ? { id: "custom-rim", url: importedRim.url, fitScale: 1 }
+                : findRim(params.rimStyle);
               if (!rim) return null;
               // Match both outer tire faces regardless of the model's original proportions.
               const targetDiameter = (effectiveParams.rimRadius + 0.02) * 2.05;
@@ -548,6 +596,16 @@ export default function TireStudio() {
                 />
               );
             })()}
+            {importedTire && (
+              <CustomRim
+                key={importedTire.url}
+                url={importedTire.url}
+                targetDiameter={effectiveParams.radius * (1 + effectiveParams.inflate * 0.18) * 2}
+                targetWidth={effectiveParams.width}
+                metalColor={scaleHex(params.tireColor, tireIntensity)}
+                materialMode="rubber"
+              />
+            )}
           </Suspense>
         </TireRig>
 
@@ -588,13 +646,13 @@ export default function TireStudio() {
               aria-label="Open export menu"
               title="Export"
               aria-expanded={exportOpen}
-              className="grid h-11 w-11 place-items-center rounded-full border border-yellow-400/50 bg-black/45 text-yellow-200 shadow-lg backdrop-blur-xl transition-colors hover:bg-yellow-400/20"
+              className="grid h-9 w-9 place-items-center rounded-full border border-yellow-400/50 bg-black/45 text-yellow-200 shadow-lg backdrop-blur-xl transition-colors hover:bg-yellow-400/20"
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-3.5 w-3.5" />
             </button>
             {exportOpen && (
               <div
-                className="absolute right-0 top-12 w-52 rounded-lg border border-white/10 bg-black/75 p-3 shadow-2xl backdrop-blur-2xl animate-scale-in"
+                className="absolute right-0 top-10 w-52 rounded-lg border border-white/10 bg-black/75 p-3 shadow-2xl backdrop-blur-2xl animate-scale-in"
                 onPointerDown={(event) => event.stopPropagation()}
               >
                 <label className="mb-3 flex items-center gap-2 text-[11px] text-neutral-300">
@@ -609,7 +667,14 @@ export default function TireStudio() {
                 <div className="grid gap-2">
                   <button type="button" onClick={() => exportPNG(transparentBg)} className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-200 hover:bg-white/10">Download PNG</button>
                   <button type="button" onClick={() => exportGLB()} className="rounded-md border border-yellow-400/50 bg-yellow-400/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-yellow-100 hover:bg-yellow-400/25">Download GLB</button>
-                  <button type="button" onClick={() => { setParams(DEFAULTS); setSpin(DEFAULT_SPIN); }} className="rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-400 hover:bg-white/5">Reset</button>
+                  <button type="button" onClick={() => {
+                    if (importedRim) { clearCustomModel(importedRim.url); URL.revokeObjectURL(importedRim.url); }
+                    if (importedTire) { clearCustomModel(importedTire.url); URL.revokeObjectURL(importedTire.url); }
+                    setImportedRim(null);
+                    setImportedTire(null);
+                    setParams(DEFAULTS);
+                    setSpin(DEFAULT_SPIN);
+                  }} className="rounded-md border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-neutral-400 hover:bg-white/5">Reset</button>
                 </div>
               </div>
             )}
@@ -787,9 +852,9 @@ export default function TireStudio() {
               <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
                 {(
                   [
-                    { id: "procedural", label: "Procedural" },
                     ...RIM_LIBRARY.map((r) => ({ id: r.id, label: r.label })),
-                  ] as const
+                    ...(importedRim ? [{ id: "custom-rim", label: importedRim.name }] : []),
+                  ]
                 ).map((opt) => (
                   <button
                     key={opt.id}
@@ -806,9 +871,25 @@ export default function TireStudio() {
                 ))}
               </div>
               <p className="mt-1 text-[10px] text-neutral-500">
-                Detailed rims are loaded from CDN and auto-fit to the tire.
+                Every rim auto-fits the current tyre diameter and width.
               </p>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-yellow-400/40 bg-yellow-400/10 px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-yellow-100 hover:bg-yellow-400/20">
+                <Upload className="h-3.5 w-3.5" /> Import rim
+                <input type="file" accept=".glb,model/gltf-binary" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) importModel(file, "rim"); event.target.value = ""; }} />
+              </label>
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-yellow-400/40 bg-yellow-400/10 px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-yellow-100 hover:bg-yellow-400/20">
+                <Upload className="h-3.5 w-3.5" /> Import tyre
+                <input type="file" accept=".glb,model/gltf-binary" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) importModel(file, "tire"); event.target.value = ""; }} />
+              </label>
+            </div>
+            {(importedRim || importedTire) && (
+              <div className="grid gap-1 text-[10px] text-neutral-400">
+                {importedRim && <div className="flex items-center justify-between gap-2"><span className="truncate">Rim: {importedRim.name}</span><button type="button" aria-label="Remove imported rim" title="Remove imported rim" onClick={() => { clearCustomModel(importedRim.url); URL.revokeObjectURL(importedRim.url); setImportedRim(null); set("rimStyle", "gt2"); }} className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 hover:text-neutral-200"><Trash2 className="h-3 w-3" /></button></div>}
+                {importedTire && <div className="flex items-center justify-between gap-2"><span className="truncate">Tyre: {importedTire.name}</span><button type="button" aria-label="Remove imported tyre" title="Remove imported tyre" onClick={() => { clearCustomModel(importedTire.url); URL.revokeObjectURL(importedTire.url); setImportedTire(null); set("hideTireBody", false); }} className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 hover:text-neutral-200"><Trash2 className="h-3 w-3" /></button></div>}
+              </div>
+            )}
             <ColorRow
               label="Rim colour"
               value={rimColor}

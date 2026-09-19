@@ -58,6 +58,8 @@ export type TireParams = {
   // user's micro adjustment on top of (or instead of, in manual mode) it.
   autoWidth: boolean;
   widthOffset: number;
+  // Hide the generated rubber body while retaining raised text for an imported tyre.
+  hideTireBody: boolean;
 };
 
 export type BuiltTire = {
@@ -310,6 +312,7 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
   const lathe = new THREE.LatheGeometry(points, 96);
   disposables.push(lathe);
   const rubberMesh = new THREE.Mesh(lathe, rubberMat);
+  rubberMesh.visible = !p.hideTireBody;
   rubberMesh.castShadow = true;
   rubberMesh.receiveShadow = true;
   // Lathe rotates around Y axis; we want tire axis = X, so rotate the whole tire group
@@ -332,6 +335,7 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
       ridge.rotateX(Math.PI / 2);
       disposables.push(ridge);
       const mesh = new THREE.Mesh(ridge, ridgeMat);
+      mesh.visible = !p.hideTireBody;
       mesh.position.y = side * (halfW + spec.tube * 0.3);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
@@ -351,6 +355,7 @@ export function buildTire(font: LoadedFont, p: TireParams): BuiltTire {
       shoulderBand.rotateX(Math.PI / 2);
       disposables.push(shoulderBand);
       const mesh = new THREE.Mesh(shoulderBand, ridgeMat);
+      mesh.visible = !p.hideTireBody;
       mesh.position.y = side * (halfW - band * Math.max(0.025, p.width * 0.018));
       mesh.castShadow = true;
       mesh.receiveShadow = true;
